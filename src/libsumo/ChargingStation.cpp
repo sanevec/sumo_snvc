@@ -212,6 +212,13 @@ ChargingStation::handleVariable(const std::string& objID, const int variable, Va
     }
 }
 
+void 
+ChargingStation::setPower(const std::string& stopID, double power) {
+  MSStoppingPlace* sp = getChargingStation(stopID);
+  MSChargingStation* cs = dynamic_cast<MSChargingStation*>(sp);
+  cs->setChargingPower(power);
+}
+
 }
 
 /****************************************************************************/

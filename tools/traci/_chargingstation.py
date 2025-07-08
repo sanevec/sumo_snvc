@@ -126,3 +126,6 @@ class ChargingStationDomain(Domain):
         Sets whether this charging station allows charging while still driving (0=no, 1=yes).
         """
         self._setCmd(tc.VAR_CS_CHARGE_IN_TRANSIT, stopID, "i", inTransit)
+        
+    def setPower(self, stopID, power):
+        self._setCmd(tc.VAR_POWER, stopID, "d", power)

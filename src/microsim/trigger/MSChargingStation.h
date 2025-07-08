@@ -203,6 +203,8 @@ protected:
     };
 
     static void writeVehicle(OutputDevice& out, const std::vector<Charge>& chargeSteps, int iStart, int iEnd, double charged);
+    
+    static void MSChargingStation::setChargingPower(double power);
 
     /// @brief Charging station's charging power
     double myChargingPower = 0;

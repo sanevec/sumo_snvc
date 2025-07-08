@@ -1476,6 +1476,9 @@ TRACI_CONST int VAR_CS_CHARGE_DELAY = 0x9a;
 // parking area access permissions
 TRACI_CONST int VAR_ACCESS_BADGE = 0x9b;
 
+//simutools 2024
+TRACI_CONST int VAR_POWER = 0xfe;
+
 } // namespace libsumo
 
 #undef TRACI_CONST

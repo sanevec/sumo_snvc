@@ -64,6 +64,7 @@ public:
     static std::shared_ptr<VariableWrapper> makeWrapper();
 
     static bool handleVariable(const std::string& objID, const int variable, VariableWrapper* wrapper, tcpip::Storage* paramData);
+    static void ChargingStation::setPower(const std::string& stopID, double power);
 
 private:
     static MSStoppingPlace* getChargingStation(const std::string& id);
