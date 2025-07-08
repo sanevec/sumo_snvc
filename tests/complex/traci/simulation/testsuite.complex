@@ -1,0 +1,16 @@
+loadState
+
+# Tests the simulation API
+simulation
+
+# test collision retrieval
+collisions
+
+# test loading a simulation
+load
+
+# test savign a state with a changed vtype
+state_save_vtype
+
+# test for #16105
+convertRoad

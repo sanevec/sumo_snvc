@@ -1,0 +1,25 @@
+# insert vehicles with taz definition
+add_with_taz
+rerouteTraveltime_default
+rerouteTraveltime_adaptEdgeWeight
+
+# set custom weight that changes over time
+rerouteTraveltime_adaptEdgeWeight_varyWithTime
+
+# adapt vehicle specific custom edge weights
+rerouteTraveltime_adaptVehicleEdgeWeight
+rerouteParkingArea_intermediate
+rerouteParkingArea_end
+
+# reroute vehicle before it's insertion
+rerouteParkingArea_undeparted
+
+# tests for behavior when using setRoutingMode
+routingMode
+
+# interaction between transient permission changes (closingReroute) and routingMode
+rerouter_routingMode
+
+# rerouting person
+person
+findIntermodalRoute
