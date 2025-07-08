@@ -129,7 +129,7 @@ MSChargingStation::getParkingArea() const {
 
 void
 MSChargingStation::setChargingPower(double chargingPower) {
-    if (power >= 0) { myChargingPower = chargingPower; }
+    if (chargingPower >= 0) { myChargingPower = chargingPower; }
 }
 
 
