@@ -129,7 +129,7 @@ MSChargingStation::getParkingArea() const {
 
 void
 MSChargingStation::setChargingPower(double chargingPower) {
-    myChargingPower = chargingPower;
+    if (power >= 0) { myChargingPower = chargingPower; }
 }
 
 
@@ -340,9 +340,5 @@ MSChargingStation::writeVehicle(OutputDevice& out, const std::vector<Charge>& ch
     out.closeTag();
 }
 
-void 
-MSChargingStation::setChargingPower(double power) {
-  if (power >= 0) { myChargingPower = power; }
-}
 
 /****************************************************************************/
