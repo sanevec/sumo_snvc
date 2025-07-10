@@ -2,29 +2,29 @@ def build_world():
     return 0
 
 def insert_node(id):
-    # leer archivo original
+    # read original file
     with open("network.nod.xml", "r") as f:
         content = f.read()
 
-    # encontrar dónde insertar antes de la etiqueta de cierre
+    # find where to insert before the closing tag
     index = content.rfind("</nodes>")
 
-    # texto a insertar
+    # text to insert
     new_node = '  <node id="' + id + '" x="10.0" y="0.0" type="priority" />\n'
 
-    # insertar el nuevo nodo
+    # insert the new node
     content = content[:index] + new_node + content[index:]
 
-    # guardar archivo modificado
+    # save modified file
     with open("network.nod.xml", "w") as f:
         f.write(content)
 
 def insert_charging_stations(cs_list):
-    # leer archivo original
+    # read original file
     with open("infraestructura.add.xml", "r") as f:
         content = f.read()
 
-    # encontrar dónde insertar antes de la etiqueta de cierre
+    # find where to insert before the closing tag
     index = content.rfind("</additional>")
 
     new_cs_list = ''
@@ -40,7 +40,7 @@ def insert_charging_stations(cs_list):
     cs[8] groupPower
     '''
     for cs in cs_list:
-        # texto a insertar
+        # text to insert
         new_cs_list += (
             '\t<chargingStation id="'+cs[0]+'" lane="'+cs[0]+'" startPos="'+cs[0]+'" endPos="'+cs[0]+'" friendlyPos="true" power="'+cs[0]+'">\n'
             '\t\t<param key="group" value="'+cs[0]+'"/>\n'
@@ -51,10 +51,10 @@ def insert_charging_stations(cs_list):
             '\t</chargingStation>\n'
         )
 
-    # insertar el nuevo nodo
+    # insert the new node
     content = content[:index] + new_cs_list + content[index:]
 
-    # guardar archivo modificado
+    # save modified file
     with open("infraestructura.add.xml", "w") as f:
         f.write(content)
 
@@ -62,7 +62,6 @@ def individual_to_charging_stations(ind, edge_ids):
     '''
     Each individual has the following structure, taking a solution with 5 charging stations as an example:
     [[6, 43, 78, 25, 11], index of the edge (from edge_ids list) where the charging station is located
-    [4, 2, 1, 1, 3]] number of charging points in each charging station
     '''
     cs_list = []
     for gen in range(0,len(ind.genome[0])): # iterate over the charging stations (gen = genome column index)
@@ -102,14 +101,13 @@ def get_lane(edge_id):
 ###############################################
 
 import traci
+import os
 
-SUMO_BINARY = "/home/juan/Escritorio/SUMO/sumo-snvc/bin/sumo"  # AJUSTA AQUÍ
-CONFIG_FILE = "simulacion.sumocfg"
+SUMO_BINARY = "/bin/sumo"  
+CONFIG_FILE = "simulation.sumocfg"
 
 def run():
-    # Aquí configuramos cada solución 
-
-    traci.start([SUMO_BINARY, "-c", CONFIG_FILE])
+    traci.start([os.environ["SUMO_HOME"]+SUMO_BINARY, "-c", CONFIG_FILE])
     while traci.simulation.getMinExpectedNumber() > 0:
         traci.simulationStep()
 
@@ -165,9 +163,7 @@ def setChargingStationPowers(vehList):
         traci.chargingstation.setParameter(csId, "power", actualPower)
 
 def run2():
-    # Aquí configuramos cada solución 
-
-    traci.start([SUMO_BINARY, "-c", CONFIG_FILE])
+    traci.start([os.environ["SUMO_HOME"]+SUMO_BINARY, "-c", CONFIG_FILE])
     while traci.simulation.getMinExpectedNumber() > 0:
         traci.simulationStep()     
 

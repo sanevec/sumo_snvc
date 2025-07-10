@@ -30,6 +30,7 @@
       <param key="groupPower" value="200000"/>
       <param key="chargeDelay" value="5"/>
     </chargingStation>
+    
     <tlLogic id="cs-start" type="static" programID="cs-gate" offset="0">
         <phase duration="2"  state="GGG"/>
         <phase duration="1"  state="yyy"/>

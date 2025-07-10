@@ -2,7 +2,7 @@
     <input>
         <net-file value="network.net.xml"/>
         <route-files value="routes.rou.xml"/>
-        <additional-files value="infraestructura.add.xml"/>
+        <additional-files value="infrastructure.add.xml"/>
 
     </input>
 

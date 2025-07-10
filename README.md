@@ -1,111 +1,78 @@
-<a href="https://sumo.dlr.de/docs"><p align="center"><img width=50% src="https://raw.githubusercontent.com/eclipse/sumo/main/docs/web/docs/images/sumo-logo.svg"></p></a>
+<h1 align="center">🚗 sumo_snvc 🚦</h1>
 
-Eclipse SUMO - Simulation of Urban MObility
-===========================================
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15359663.svg )](https://doi.org/10.5281/zenodo.15359663)
-[![Windows](https://github.com/eclipse-sumo/sumo/actions/workflows/windows.yml/badge.svg)](https://github.com/eclipse-sumo/sumo/actions/workflows/windows.yml)
-[![Linux](https://github.com/eclipse-sumo/sumo/actions/workflows/linux.yml/badge.svg)](https://github.com/eclipse-sumo/sumo/actions/workflows/linux.yml)
-[![macOS](https://github.com/eclipse-sumo/sumo/actions/workflows/macos.yml/badge.svg)](https://github.com/eclipse-sumo/sumo/actions/workflows/macos.yml)
-[![sonarcloud security](https://sonarcloud.io/api/project_badges/measure?project=org.eclipse.sumo&metric=security_rating)](https://sonarcloud.io/summary/overall?id=org.eclipse.sumo)
-[![Translation status](https://hosted.weblate.org/widgets/eclipse-sumo/-/svg-badge.svg)](https://hosted.weblate.org/engage/eclipse-sumo/)
-![Repo Size](https://img.shields.io/github/repo-size/eclipse/sumo.svg)
+<p align="center">
+  <a href="https://github.com/eclipse-sumo/sumo">
+    <img src="https://img.shields.io/badge/SUMO-%20Fork-blue?logo=github" alt="SUMO Fork" />
+  </a>
+  <a href="https://doi.org/10.1007/978-3-031-87345-4_6">
+    <img src="https://img.shields.io/badge/Add--ons-DOI-green" alt="Add-ons DOI" />
+  </a>
+</p>
 
-What is SUMO
-------------
-
-["Simulation of Urban MObility" (SUMO)](https://sumo.dlr.de/) is an open source,
-highly portable, microscopic traffic simulation package designed to handle
-large road networks and different modes of transport.
-
-<p align="center"><img width=70% src="https://raw.githubusercontent.com/eclipse/sumo/main/docs/web/docs/images/multiple-screenshots.png"></p>
-
-It is mainly developed by employees of the [Institute of Transportation Systems
-at the German Aerospace Center](https://www.dlr.de/ts/en/).
+<p align="center">
+  <strong>Fork of <a href="https://github.com/eclipse-sumo/sumo">SUMO</a> for SANEVEC project</strong><br>
+  This project implements the EV fast charging and charge-site power limitations described <a href="https://doi.org/10.1007/978-3-031-87345-4_6">in this paper</a> for enhanced simulation capabilities.
+</p>
 
 
-Where to get it
----------------
 
-You can download SUMO via our [downloads site](https://sumo.dlr.de/docs/Downloads.html).
+## 🛠️ Build and Installation
+Clone the repository:
 
-As the program is still under development (and is being extended continuously), we advice you to
-use the latest sources from our GitHub repository. Using a command line client,
-execute the following command:
-
-```
-git clone --recursive https://github.com/eclipse-sumo/sumo
-```
-
-Contact
--------
-
-To stay informed, we have a mailing list for SUMO, which
-[you can subscribe](https://dev.eclipse.org/mailman/listinfo/sumo-user) to.
-Messages to the list can be sent to sumo-user@eclipse.org.
-SUMO announcements will be made through the sumo-announce@eclipse.org list;
-[you can subscribe](https://dev.eclipse.org/mailman/listinfo/sumo-announce) to it as well.
-For further contact information, have a look at [this page](https://sumo.dlr.de/docs/Contact.html).
-
-
-Build and Installation
-----------------------
-
-For Windows we provide pre-compiled binaries and CMake files to generate Visual Studio projects.
-If you want to develop under Windows, please also clone the dependent libraries using:
-
-```
-git clone --recursive https://github.com/DLR-TS/SUMOLibraries
-```
-
-If you're using Linux, you should have a look whether your distribution already contains sumo.
-There is also a [ppa for ubuntu users](https://launchpad.net/~sumo) and an
-[open build service instance](https://build.opensuse.org/project/show/science:dlr).
-If you want to build SUMO yourself, the steps for ubuntu are:
-
-```
-cd <SUMO_DIR> # please insert the correct directory name here
+```bash
+git clone  https://github.com/sanevec/sumo_snvc
+cd sumo_snvc
 export SUMO_HOME="$PWD"
+```
+Install dependencies:
+
+```bash
 sudo apt-get install $(cat build_config/build_req_deb.txt build_config/tools_req_deb.txt)
+sudo apt-get install libgdal-dev
+sudo apt update
+sudo apt install libopenscenegraph-dev openscenegraph libopenthreads-dev
+```
+Configure and build:
+
+```bash
 cmake -B build .
 cmake --build build -j$(nproc)
 ```
+## 🚀 Run a Test
+After compilation, binaries will be located in the bin/ folder.
 
-For [detailed build instructions, have a look at our Documentation](https://sumo.dlr.de/docs/Developer/Main.html#build_instructions).
+A basic SUMO test simulation is available in the genetic/ folder. Run it like this:
 
+```bash
+cd genetic
+../bin/sumo-gui -c simulation.sumocfg
+```
+To use the charging add-on capabilities, it is required to launch the simulation from a Python script and control every step using TraCI. A Python virtual environment is required to launch the simulation. Instructions to create it (outside of the project folder):
+```bash
+python3 -m venv venv-sumo
+source venv-sumo/bin/activate
+```
+To run the test from genetic/ folder:
+```bash
+python3 traci_test.py
+```
+## 🧬 Genetic Algorithm
+🚧 Work in Progress...
 
-Getting started
----------------
+In the context of the SANEVEC project, we are proposing an optimal set of charging station locations for Sevilla Este to minimize traffic jams and contamination. 
+```text
+Algorithm Genetic
+    Initialize population P
+    Evaluate fitness of individuals in P
 
-To get started with SUMO, take a look at the docs/tutorial and examples directories,
-which contain some example networks with routing data and configuration files.
-There is also user documentation provided in the docs/ directory and on the
-homepage.
+    For generation = 1 to MaxGenerations do
+        P ← EvolvePopulation(P)
+        Evaluate fitness of individuals in P
+    End For
 
-Documentation
----------------
+    Return best solution found in P
+End Algorithm
+```
+Each individual of the population for the genetic algorithm has a list of charging station locations taken from a list of possible edges, taking a solution with 5 charging stations as an example, this would be the genome structure:
 
-- The main documentation is at [sumo.dlr.de/docs](https://sumo.dlr.de/docs). Note that this tracks the [development version](https://sumo.dlr.de/docs/FAQ.html#why_does_sumo_not_behave_as_documented_in_this_wiki).
-- A mirror of the main documentation is at [sumo.sourceforge.net/docs](https://sumo.sourceforge.net/docs).
-- An offline version of the documentation is part of every release and can be accessed via `docs/userdoc/index.html`.
-
-Improving SUMO
---------------
-
-Please use the [GitHub issue tracking tool](https://github.com/eclipse-sumo/sumo/issues) for bugs and requests,
-or file them to the sumo-user@eclipse.org list. Before
-filing a bug, please consider to check with a current repository checkout
-whether the problem has already been fixed.
-
-We welcome patches, pull requests and other contributions! For details see [our contribution guidelines](CONTRIBUTING.md).
-
-We use [Weblate for translating SUMO](https://hosted.weblate.org/projects/eclipse-sumo/). If you
-want to add translation strings or a language, see [our contribution guidelines](CONTRIBUTING.md#translating) and
-[this page](https://sumo.dlr.de/docs/Developer/Translating.html) for more information.
-
-
-License
--------
-
-SUMO is licensed under the [Eclipse Public License Version 2](https://eclipse.org/legal/epl-v20.html).
-The licenses of the different libraries and supplementary code information are in the
-subdirectories and in the [Documentation](https://sumo.dlr.de/docs/Libraries_Licenses.html).
+    [6, 43, 78, 25, 11]
