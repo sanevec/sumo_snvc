@@ -1,0 +1,39 @@
+- name: feat
+  color: 1D76DB
+  description: New feature
+
+- name: fix
+  color: D73A4A
+  description: Bug fix
+
+- name: chore
+  color: A2EEEF
+  description: Maintenance task
+
+- name: docs
+  color: 0075CA
+  description: Documentation changes
+
+- name: style
+  color: C2E0C6
+  description: Code style changes (no logic)
+
+- name: refactor
+  color: FBCA04
+  description: Code refactoring
+
+- name: perf
+  color: C5DEF5
+  description: Performance improvement
+
+- name: test
+  color: BFDADC
+  description: Tests
+
+- name: ci
+  color: 0E8A16
+  description: CI-related changes
+
+- name: build
+  color: E4E669
+  description: Build system changes
