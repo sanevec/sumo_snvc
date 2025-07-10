@@ -1,0 +1,91 @@
+name: Create Branch on Issue Assignment
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  create_branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate CZ-compliant branch name from issue title and type
+        id: generate
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          REPO="${{ github.repository }}"
+
+          # Extract all labels
+          LABELS=$(echo '${{ toJson(github.event.issue.labels) }}' | grep -o '"name":[^,}]*' | cut -d: -f2 | tr -d '"')
+
+          # Define allowed CZ types
+          CZ_TYPES="feat fix chore docs style refactor perf test ci build"
+
+          # Get first matching CZ type from labels
+          TYPE_LABEL=""
+          for label in $LABELS; do
+            norm_label=$(echo "$label" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
+            if echo "$CZ_TYPES" | grep -qw "$norm_label"; then
+              TYPE_LABEL="$norm_label"
+              break
+            fi
+          done
+
+          # Fallback to "chore" if no valid type found
+          if [ -z "$TYPE_LABEL" ]; then
+            TYPE_LABEL="chore"
+          fi
+
+          echo "✅ Type label used: $TYPE_LABEL"
+          echo "type_label=$TYPE_LABEL" >> $GITHUB_OUTPUT
+
+          # Sanitize issue title
+          SAFE_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed -E 's/^-+|-+$//g')
+          BRANCH_NAME="${TYPE_LABEL}/${ISSUE_NUMBER}-${SAFE_TITLE}"
+
+          echo "📛 Branch name: $BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Get default branch and latest commit SHA
+        id: get_sha
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          REPO="${{ github.repository }}"
+
+          DEFAULT_BRANCH=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            https://api.github.com/repos/$REPO | grep '"default_branch"' | cut -d '"' -f4)
+
+          COMMIT_SHA=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            https://api.github.com/repos/$REPO/git/ref/heads/$DEFAULT_BRANCH | grep '"sha"' | head -n 1 | cut -d '"' -f4)
+
+          echo "default_branch=$DEFAULT_BRANCH" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+
+      - name: Create new branch
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          BRANCH_NAME=${{ steps.generate.outputs.branch_name }}
+          SHA=${{ steps.get_sha.outputs.commit_sha }}
+          REPO="${{ github.repository }}"
+
+          curl -s -X POST -H "Authorization: token $GH_TOKEN" \
+            -d "{\"ref\": \"refs/heads/$BRANCH_NAME\", \"sha\": \"$SHA\"}" \
+            https://api.github.com/repos/$REPO/git/refs
+
+      - name: Comment on the issue
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          BRANCH_NAME=${{ steps.generate.outputs.branch_name }}
+          REPO="${{ github.repository }}"
+
+          COMMENT="🚀 A branch [\`$BRANCH_NAME\`](https://github.com/$REPO/tree/$BRANCH_NAME) has been created for this issue"
+
+          curl -s -X POST -H "Authorization: token $GH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": \"$COMMENT\"}" \
+            https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER/comments
