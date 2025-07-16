@@ -107,7 +107,7 @@
         
         <param key="has.stationfinder.device" value="true"/>
         <param key="device.stationfinder.checkEnergyForRoute" value="false"/>
-        <param key="device.stationfinder.replacePlannedStop" value="3"/>
+        <param key="device.stationfinder.replacePlannedStop" value="0"/>
         <param key="device.stationfinder.waitForCharge" value="10"/>
         <param key="device.stationfinder.repeat" value="10"/>
         <param key="device.stationfinder.charging.waitingTime.weight" value="3"/>

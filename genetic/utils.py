@@ -1,5 +1,18 @@
-def build_world():
-    return 0
+import os
+import traci
+import re
+
+SUMO_BINARY = "/bin/sumo-gui"
+FOLDER = "cs_example/"  
+CONFIG_FILE = FOLDER+"simulation.sumocfg"
+NODES_FILE = FOLDER+"network.nod.xml"
+EDGES_FILE = FOLDER+"network.edg.xml"
+ADDITIONAL_FILE = FOLDER+"infrastructure.add.xml"
+NETWORK_FILE = FOLDER+"network.net.xml"
+
+def build_world(cs_list=None):
+    os.system(os.environ["SUMO_HOME"]+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE)
+    run()
 
 def insert_node(id):
     # read original file
@@ -61,20 +74,20 @@ def insert_charging_stations(cs_list):
 def individual_to_charging_stations(ind, edge_ids):    
     '''
     Each individual has the following structure, taking a solution with 5 charging stations as an example:
-    [[6, 43, 78, 25, 11], index of the edge (from edge_ids list) where the charging station is located
+    [6, 43, 78, 25, 11] index of the edge (from edge_ids list) where the charging station is located
     '''
     cs_list = []
-    for gen in range(0,len(ind.genome[0])): # iterate over the charging stations (gen = genome column index)
-        lane = get_lane(edge_ids[ind.genome[0][gen]])
-        for cp in range(0, ind.genome[1][gen]): # iterate over charging points of each charging station
+    for gen in range(0,len(ind.genome)): # iterate over the charging stations (gen = genome column index)
+        lane = get_lane(edge_ids[ind.genome[gen]])
+        for cp in range(3): # iterate over charging points of each charging station
             # Convert each individual to a charging station xml representation
             cs = [
-                edge_ids[ind.genome[0][gen]] + '_' + cp,  # id
+                edge_ids[ind.genome[gen]] + '_' + cp,  # id
                 lane,  # lane
                 1.0,  # startPos
                 4.0,  # endPos
                 150000,  # power
-                ind.genome[0][gen],  # group
+                ind.genome[gen],  # group
                 _,  # chargingPort
                 150000,  # allowedPowerOutput
                 200000  # groupPower
@@ -84,7 +97,7 @@ def individual_to_charging_stations(ind, edge_ids):
 
 def obtain_edge_ids():
     edge_ids = []
-    with open("network.edg.xml", "r") as f:
+    with open(EDGES_FILE, "r") as f:
         content = f.read()
         lines = content.splitlines()
         for line in lines:
@@ -95,23 +108,82 @@ def obtain_edge_ids():
                 edge_ids.append(edge_id)
     return edge_ids
 
+def get_edge_nodes(edge_id):
+    # Expresión regular para capturar los atributos from y to
+    pattern = re.compile(
+        r'<edge[^>]*id="' + re.escape(edge_id) + r'"[^>]*from="([^"]+)"[^>]*to="([^"]+)"'
+    )
+    
+    with open(EDGES_FILE, 'r', encoding='utf-8') as f:
+        for line in f:
+            match = pattern.search(line)
+            if match:
+                from_node = match.group(1)
+                to_node = match.group(2)
+                return from_node, to_node
+
+    return None, None
+
+
+def load_nodes():
+    node_coords = {}
+
+    # regex para capturar id, x, y
+    node_re = re.compile(
+        r'<node[^>]*id="([^"]+)"[^>]*x="([^"]+)"[^>]*y="([^"]+)"'
+    )
+
+    with open(NODES_FILE, 'r', encoding='utf-8') as f:
+        for line in f:
+            m = node_re.search(line)
+            if m:
+                node_id = m.group(1)
+                x = float(m.group(2))
+                y = float(m.group(3))
+                node_coords[node_id] = (x, y)
+
+    return node_coords
+
+def get_edge_block(edge_id):
+    edge_start_re = re.compile(
+        r'<edge\b[^>]*\bid="' + re.escape(edge_id) + r'"'
+    )
+    
+    in_edge = False
+    block_lines = []
+    
+    with open(EDGES_FILE, 'r', encoding='utf-8') as f:
+        for line in f:
+            if not in_edge:
+                if edge_start_re.search(line):
+                    in_edge = True
+                    block_lines.append(line)
+                    # Check if ends in same line
+                    if '/>' in line or '</edge>' in line:
+                        in_edge = False
+                        break
+            else:
+                block_lines.append(line)
+                if '/>' in line or '</edge>' in line:
+                    in_edge = False
+                    break
+
+    if block_lines:
+        return ''.join(block_lines)
+    else:
+        return None
+
 def get_lane(edge_id):
     return None
 
 ###############################################
 
-import traci
-import os
-
-SUMO_BINARY = "/bin/sumo"  
-CONFIG_FILE = "simulation.sumocfg"
-
 def run():
     traci.start([os.environ["SUMO_HOME"]+SUMO_BINARY, "-c", CONFIG_FILE])
-    while traci.simulation.getMinExpectedNumber() > 0:
-        traci.simulationStep()
+    vehList = []
 
-        vehList = []
+    while traci.simulation.getMinExpectedNumber() > 0:
+        traci.simulationStep()        
         for veh in traci.simulation.getStopStartingVehiclesIDList():
             csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
             if (csId != "NULL"):
@@ -161,10 +233,44 @@ def setChargingStationPowers(vehList):
         factor = float(traci.chargingstation.getParameter(csId, "aliquotPowerAdjustment"))
         actualPower = power * factor
         traci.chargingstation.setParameter(csId, "power", actualPower)
+        #print(f"Estacion {csId} tiene power: {actualPower}, maxPsoc: {maxPsoc}, maxPcp: {maxPcp}, maxPev: {maxPev}, factor: {factor}")
+
+
+
+
+
+
+
+
+
+
 
 def run2():
     traci.start([os.environ["SUMO_HOME"]+SUMO_BINARY, "-c", CONFIG_FILE])
     while traci.simulation.getMinExpectedNumber() > 0:
-        traci.simulationStep()     
+        traci.simulationStep()    
+        for veh in traci.vehicle.getIDList():
+            capacity = float(traci.vehicle.getParameter(veh, "device.battery.capacity"))
+            currentCharge = float(traci.vehicle.getParameter(veh, "device.battery.chargeLevel"))
+            stateOfCharge = currentCharge / capacity 
+            #print('Vehículo: ' + veh + ' SOC: ' + str(stateOfCharge))
+            #if stateOfCharge < 0.4:
+                
+            route = traci.vehicle.getRoute(veh)
+            csId_stationfinder = traci.vehicle.getParameter(veh, "device.stationfinder.chargingStation")
+            csId_battery = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
+            if csId_stationfinder != "" and csId_battery == "NULL":
+                print(f"Vehículo {veh} tiene ruta: {route} y battery: {csId_battery} y stationfinder: {csId_stationfinder}")
+                #traci.vehicle.setParameter(veh, "device.battery.chargingStationId", csId_stationfinder)
+            
+            print(f"Vehículo {veh} tiene ruta: {route} y battery: {csId_battery} y stationfinder: {csId_stationfinder}")
 
+        for veh in traci.simulation.getStopStartingVehiclesIDList():
+            csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
+            print('Empezando parada coche: '+ veh + ' csId: ' + csId)
+                
+        for veh in traci.simulation.getStopEndingVehiclesIDList():
+            csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
+            print('Saliendo parada coche: '+ veh + ' csId: ' + csId)
+            
     traci.close()

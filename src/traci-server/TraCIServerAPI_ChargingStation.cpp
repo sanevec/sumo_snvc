@@ -54,10 +54,9 @@ bool
 TraCIServerAPI_ChargingStation::processSet(TraCIServer& server, tcpip::Storage& inputStorage,
         tcpip::Storage& outputStorage) {
     std::string warning = ""; // additional description for response
-    // variable&& 
+    // variable
     int variable = inputStorage.readUnsignedByte();
     if (variable != libsumo::VAR_PARAMETER &&
-            variable != libsumo::VAR_POWER &&
             variable != libsumo::VAR_CS_POWER &&
             variable != libsumo::VAR_CS_EFFICIENCY &&
             variable != libsumo::VAR_CS_CHARGE_DELAY &&
@@ -104,14 +103,6 @@ TraCIServerAPI_ChargingStation::processSet(TraCIServer& server, tcpip::Storage& 
             case libsumo::VAR_CS_CHARGE_IN_TRANSIT: {
                 const int value = StoHelp::readTypedInt(inputStorage, "Setting charge in transit requires an integer.");
                 libsumo::ChargingStation::setChargeInTransit(id, value != 0);
-            }
-            break;
-            case libsumo::VAR_POWER: {
-                double power = 0;
-                if (!server.readTypeCheckingDouble(inputStorage, power)) {
-                    return server.writeErrorStatusCmd(libsumo::CMD_SET_CHARGINGSTATION_VARIABLE,"Setting power requires a double.", outputStorage);
-                }
-                libsumo::ChargingStation::setPower(id, power);                
             }
             break;
             default:

@@ -16,8 +16,11 @@
         <lane index="1" speed="13.89" length="70.00" width="3.20"/>
         <lane index="2" speed="13.89" length="70.00" width="3.20"/>
     </edge>
-    <edge id="e6" from="cs-end" to="road-from-cs" priority="-1">
+    <edge id="e6" from="cs-end" to="road-to-cs" priority="-1">
         <lane index="0" speed="13.89" length="50.00"/>
+    </edge>
+    <edge id="e7" from="start2" to="end2" priority="-1">
+        <lane index="0" speed="13.89"/>
     </edge>
 </edges>
 
