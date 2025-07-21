@@ -125,14 +125,15 @@
 
     <!-- Definición de la ruta -->
     <route id="r0" edges="e1 e2 e3"/>
+    <route id="r1" edges="e1 e4 e5 e6 e2 e3"/>
 
     <!-- Definición del vehículo -->
-    <vehicle id="veh1" type="EV_car" route="r0" depart="0">
-        <param key="device.battery.chargeLevel" value="25000"/>        
+    <vehicle id="veh1" type="EV_car" route="r1" depart="0">
+        <param key="device.battery.chargeLevel" value="50000"/>        
     </vehicle>
     
-    <vehicle id="veh2" type="EV_car" route="r0" depart="40">
-        <param key="device.battery.chargeLevel" value="25000"/>
+    <vehicle id="veh2" type="EV_car" route="r0" depart="20">
+        <param key="device.battery.chargeLevel" value="50000"/>
     </vehicle>
     
     <vehicle id="veh3" type="EV_car" route="r0" depart="80">

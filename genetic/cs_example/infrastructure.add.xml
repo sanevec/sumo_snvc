@@ -9,21 +9,21 @@
       <param key="chargeDelay" value="5"/>
     </chargingStation>
     -->
-    <chargingStation id="cs1" lane="e5_0" startPos="0.0" endPos="5.0" friendlyPos="true" power="150000">
+    <chargingStation id="cs1" lane="e5_0" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
       <param key="group" value="0"/>
       <param key="chargingPort" value="CCS2"/>
       <param key="allowedPowerOutput" value="150000"/>
       <param key="groupPower" value="200000"/>
       <param key="chargeDelay" value="5"/>
     </chargingStation>
-    <chargingStation id="cs2" lane="e5_1" startPos="0.0" endPos="5.0" friendlyPos="true" power="150000">
+    <chargingStation id="cs2" lane="e5_1" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
       <param key="group" value="0"/>
       <param key="chargingPort" value="CCS2"/>
       <param key="allowedPowerOutput" value="150000"/>
       <param key="groupPower" value="200000"/>
       <param key="chargeDelay" value="5"/>
     </chargingStation>
-    <chargingStation id="cs3" lane="e5_2" startPos="0.0" endPos="5.0" friendlyPos="true" power="150000">
+    <chargingStation id="cs3" lane="e5_2" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
       <param key="group" value="0"/>
       <param key="chargingPort" value="CCS2"/>
       <param key="allowedPowerOutput" value="150000"/>
