@@ -1,5 +1,9 @@
 import sys
 import os
+import math
+from datetime import datetime
+import re
+from config import GA_PARAMS
 
 # Read the SUMO_HOME environment variable
 sumo_home = os.environ.get("SUMO_HOME")
@@ -15,20 +19,56 @@ if tools_path not in sys.path:
     sys.path.append(tools_path)
 
 import traci
-import re
 
-SUMO_BINARY = "/bin/sumo-gui"
-FOLDER = "cs_example/"  
-CONFIG_FILE = FOLDER+"simulation.sumocfg"
-NODES_FILE = FOLDER+"network.nod.xml"
-EDGES_FILE = FOLDER+"network.edg.xml"
-ADDITIONAL_FILE = FOLDER+"infrastructure.add.xml"
-NETWORK_FILE = FOLDER+"network.net.xml"
-
-def build_world(cs_list=None):
+def build_world(cs_list=None):    
     #add_charging_stations(cs_list)
+    print(obtain_edge_ids())
+    print(get_edge_nodes("e7"))
+    old = get_edge_block("e7")
+    print(old)
+    new = replace_attribute(old, "speed", "20.0")
+    print(new)
+    replace_xml_block_in_file("cs_example/network.edg.xml", old, new)
+    print(load_nodes())
+    add_charging_stations([6,7])
     os.system(os.environ["SUMO_HOME"]+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE)
     run()
+
+def folder_setup(src_folder, param_dict, file_names):
+    """
+    Creates a timestamped folder, copies the given files into it, and writes params.txt.
+
+    Parameters:
+        src_folder (str): Path to the folder containing the original files (must end with '/')
+        param_dict (dict): Dictionary of parameters to be written to params.txt
+        file_names (list): List of filenames to copy from src_folder to the new folder
+
+    Returns:
+        str: Path to the created folder
+    """
+    # Generate timestamp and folder path
+    timestamp = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
+    folder_path = f"runs/{timestamp}/"
+    os.makedirs(folder_path, exist_ok=True)
+
+    # Copy files
+    for name in file_names:
+        src_path = src_folder + name
+        dst_path = folder_path + name
+
+        with open(src_path, 'r', encoding='utf-8') as f_in:
+            content = f_in.read()
+
+        with open(dst_path, 'w', encoding='utf-8') as f_out:
+            f_out.write(content)
+
+    # Write params.txt
+    with open(folder_path + "params.txt", 'w', encoding='utf-8') as f:
+        for key, value in param_dict.items():
+            f.write(f"{key}={value}\n")
+
+    print(f"Created folder: {folder_path}")
+    return folder_path
 
 def add_charging_stations(cs_list=[0]):
     edge_ids = obtain_edge_ids()
@@ -37,8 +77,7 @@ def add_charging_stations(cs_list=[0]):
         # Now we have the edge_id where we want to add the charging station
         # First, we need to get the point in the edge where we want to place the charging station starting node
         edge_xml = get_edge_block(edge_id)
-        shape_points = extract_shape_coords(edge_xml)
-        xm, ym = None, None
+        shape_points = extract_shape_coords(edge_xml)        
         if shape_points:
             # If the edge has a shape, we have to use the middle point of the shape
             mid_point = compute_middle_point(shape_points)
@@ -94,10 +133,10 @@ def add_charging_stations(cs_list=[0]):
         x1, y1, x2, y2 = generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xm, ym)
         add_charging_station(edge_id, cs, x1, y1, x2, y2, 3)
 
-
-
-
 def obtain_edge_ids():
+    '''
+    Obtains all edge IDs from the edges file and returns them as a list.
+    '''
     edge_ids = []
     with open(EDGES_FILE, "r") as f:
         content = f.read()
@@ -111,7 +150,9 @@ def obtain_edge_ids():
     return edge_ids
 
 def get_edge_nodes(edge_id):
-    # Regex to get from and to nodes of an edge
+    '''
+    Returns the from and to nodes of an edge given its ID.
+    '''
     pattern = re.compile(
         r'<edge[^>]*id="' + re.escape(edge_id) + r'"[^>]*from="([^"]+)"[^>]*to="([^"]+)"'
     )
@@ -126,9 +167,11 @@ def get_edge_nodes(edge_id):
 
     return None, None
 
-
 def load_nodes():
-    # Load nodes from the nodes file and return a dictionary {node_id: (x, y)}
+    '''
+    Loads all nodes from the nodes file and returns a dictionary with node IDs as keys
+    and their coordinates as values.
+    '''
     node_coords = {}
     node_re = re.compile(
         r'<node[^>]*id="([^"]+)"[^>]*x="([^"]+)"[^>]*y="([^"]+)"'
@@ -146,6 +189,10 @@ def load_nodes():
     return node_coords
 
 def get_edge_block(edge_id):
+    '''
+    Returns the XML block of an edge given its ID.
+    If the edge is not found, returns None.
+    '''
     edge_start_re = re.compile(
         r'<edge\b[^>]*\bid="' + re.escape(edge_id) + r'"'
     )
@@ -175,6 +222,11 @@ def get_edge_block(edge_id):
         return None
 
 def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, n_cs):
+    '''
+    Adds a charging station to the network by creating the necessary nodes and edges.
+    The charging station consists of a start node, an end node, and a lane with multiple
+    charging points. The function also adds the charging station to the additional.xml file.
+    '''
     cs_start = f"cs_start_{edge_id}"
     cs_end = f"cs_end_{edge_id}"
     add_node_to_xml(NODES_FILE, cs_start, x1, y1)
@@ -202,7 +254,6 @@ def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, n_cs):
     add_edge_to_xml(EDGES_FILE, edges)
     add_cs_to_xml(ADDITIONAL_FILE, charging_points)
         
-
 def add_node_to_xml(file_path, node_id, x, y):
     """
     Appends a <node> element to the XML file before the closing </nodes> tag.
@@ -298,10 +349,10 @@ def replace_xml_block_in_file(file_path, old_block, new_block):
     print("Block replaced successfully.")
     return True
 
-
 def extract_shape_coords(edge_xml_text):
     """
-    Si el edge tiene atributo shape, devuelve lista de puntos [(x,y), ...]
+    If the edge XML block contains a shape attribute, this function extracts the coordinates
+    and returns them as a list of tuples (x, y). If no shape is found, returns None.
     """
     shape_re = re.compile(r'shape="([^"]+)"')
     m = shape_re.search(edge_xml_text)
@@ -326,29 +377,9 @@ def compute_middle_point(shape_points):
     mid_index = n // 2
     return shape_points[mid_index]
 
-def load_node_coords(nodes_file):
-    """
-    Devuelve diccionario {node_id: (x, y)}
-    """
-    coords = {}
-    node_re = re.compile(
-        r'<node[^>]*id="([^"]+)"[^>]*x="([^"]+)"[^>]*y="([^"]+)"'
-    )
-    with open(nodes_file, 'r', encoding='utf-8') as f:
-        for line in f:
-            m = node_re.search(line)
-            if m:
-                node_id = m.group(1)
-                x = float(m.group(2))
-                y = float(m.group(3))
-                coords[node_id] = (x, y)
-    return coords
-
-
-
 def replace_attribute(xml_text, attr_name, new_value):
     """
-    Reemplaza el valor de un atributo en un bloque XML.
+    Replaces the value of an attribute in an XML block.
     """
     regex = re.compile(r'(' + re.escape(attr_name) + r')="[^"]*"')
     new_text, count = regex.subn(r'\1="{}"'.format(new_value), xml_text, count=1)
@@ -356,8 +387,6 @@ def replace_attribute(xml_text, attr_name, new_value):
         # Atributo no existe → lo añadimos
         new_text = new_text.rstrip('/>\n ') + f' {attr_name}="{new_value}" />\n'
     return new_text
-
-import math
 
 def generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xp, yp, length=65, offset=55):
     """
@@ -411,157 +440,6 @@ def generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xp, yp, length=6
     qy2 = my + dy_half
 
     return qx1, qy1, qx2, qy2
-
-
-def replace_shape(edge_xml_text, new_shape_str):
-    """
-    Reemplaza el shape en un bloque XML.
-    """
-    shape_re = re.compile(r'shape="[^"]*"')
-    if shape_re.search(edge_xml_text):
-        return shape_re.sub(f'shape="{new_shape_str}"', edge_xml_text)
-    else:
-        # shape no existía → añadirlo antes de />
-        return edge_xml_text.rstrip('/>\n ') + f' shape="{new_shape_str}" />\n'
-
-def compute_middle_coordinates(edges_file, nodes_file, edge_id):
-    # 1. Copiar bloque del edge
-    edge_block = get_edge_block(edges_file, edge_id)
-    if edge_block is None:
-        print(f"No se encontró edge {edge_id}")
-        return None, None, None
-
-    # 2. Revisar si tiene shape
-    shape_points = extract_shape_coords(edge_block)
-
-    if shape_points:
-        # Caso con shape
-        xm, ym = compute_middle_point(shape_points)
-        return edge_block, xm, ym
-    else:
-        # Caso sin shape → usar from y to
-        node_coords = load_node_coords(nodes_file)
-        from_node, to_node = get_edge_nodes(edge_block)
-
-        if from_node is None or to_node is None:
-            print("No se pudieron extraer from/to del edge.")
-            return None, None, None
-
-        x1, y1 = node_coords[from_node]
-        x2, y2 = node_coords[to_node]
-
-        xm = (x1 + x2) / 2
-        ym = (y1 + y2) / 2
-
-        return edge_block, xm, ym
-
-def split_edge(edge_id, edges_file, nodes_file):
-    # Obtener bloque y coordenadas
-    edge_block, xm, ym = compute_middle_coordinates(edges_file, nodes_file, edge_id)
-    if edge_block is None:
-        print("Error. No se encontró el edge.")
-        return
-
-    shape_points = extract_shape_coords(edge_block)
-    from_node, to_node = get_edge_nodes(edge_block)
-
-    mid_node_id = f"{edge_id}_mid"
-
-    # preparar nuevos shapes si existían
-    new_shape1 = None
-    new_shape2 = None
-
-    if shape_points:
-        mid_point = (xm, ym)
-
-        # split shape en dos mitades
-        n = len(shape_points)
-        mid_index = n // 2
-
-        first_half = shape_points[:mid_index+1]
-        second_half = shape_points[mid_index:]
-
-        # asegurarnos que mid_point está incluido en ambos lados
-        if first_half[-1] != mid_point:
-            first_half.append(mid_point)
-        if second_half[0] != mid_point:
-            second_half.insert(0, mid_point)
-
-        # construir strings shape
-        new_shape1 = " ".join(f"{x},{y}" for x, y in first_half)
-        new_shape2 = " ".join(f"{x},{y}" for x, y in second_half)
-
-    # Generar edge1
-    edge1 = replace_attribute(edge_block, "id", f"{edge_id}_1")
-    edge1 = replace_attribute(edge1, "from", from_node)
-    edge1 = replace_attribute(edge1, "to", mid_node_id)
-    if shape_points:
-        edge1 = replace_shape(edge1, new_shape1)
-    else:
-        # quitar shape si existía
-        edge1 = re.sub(r'\s*shape="[^"]*"', '', edge1)
-
-    # Generar edge2
-    edge2 = replace_attribute(edge_block, "id", f"{edge_id}_2")
-    edge2 = replace_attribute(edge2, "from", mid_node_id)
-    edge2 = replace_attribute(edge2, "to", to_node)
-    if shape_points:
-        edge2 = replace_shape(edge2, new_shape2)
-    else:
-        # quitar shape si existía
-        edge2 = re.sub(r'\s*shape="[^"]*"', '', edge2)
-
-    # leer edges.xml y eliminar edge original
-    with open(edges_file, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-
-    edge_start_re = re.compile(r'<edge\b[^>]*id="' + re.escape(edge_id) + r'"')
-    new_lines = []
-    skip = False
-
-    for line in lines:
-        if not skip:
-            if edge_start_re.search(line):
-                skip = True
-                if '/>' in line or '</edge>' in line:
-                    skip = False
-            else:
-                new_lines.append(line)
-        else:
-            if '/>' in line or '</edge>' in line:
-                skip = False
-
-    # Insertar los dos nuevos edges antes de </edges>
-    final_lines = []
-    for line in new_lines:
-        if line.strip() == "</edges>":
-            final_lines.append(edge1)
-            final_lines.append(edge2)
-        final_lines.append(line)
-
-    with open(edges_file, 'w', encoding='utf-8') as f:
-        f.writelines(final_lines)
-
-    # añadir nodo intermedio a nodes.xml
-    with open(nodes_file, 'r', encoding='utf-8') as f:
-        node_lines = f.readlines()
-
-    new_node_line = f'    <node id="{mid_node_id}" x="{xm}" y="{ym}" />\n'
-
-    new_node_lines = []
-    for line in node_lines:
-        if line.strip() == "</nodes>":
-            new_node_lines.append(new_node_line)
-        new_node_lines.append(line)
-
-    with open(nodes_file, 'w', encoding='utf-8') as f:
-        f.writelines(new_node_lines)
-
-    print(f"Edge {edge_id} duplicado y partido correctamente.")
-    print(f"Nuevo nodo {mid_node_id} insertado en ({xm},{ym}).")
-
-
-
 
 ###############################################
 
@@ -654,86 +532,18 @@ def run2():
     traci.close()
 
 
-#######################################################
-# BORRADOR
-    
-def insert_node(id):
-    # read original file
-    with open("network.nod.xml", "r") as f:
-        content = f.read()
-
-    # find where to insert before the closing tag
-    index = content.rfind("</nodes>")
-
-    # text to insert
-    new_node = '  <node id="' + id + '" x="10.0" y="0.0" type="priority" />\n'
-
-    # insert the new node
-    content = content[:index] + new_node + content[index:]
-
-    # save modified file
-    with open("network.nod.xml", "w") as f:
-        f.write(content)
-
-def insert_charging_stations(cs_list):
-    # read original file
-    with open("infraestructura.add.xml", "r") as f:
-        content = f.read()
-
-    # find where to insert before the closing tag
-    index = content.rfind("</additional>")
-
-    new_cs_list = ''
-    '''
-    cs[0] id
-    cs[1] lane
-    cs[2] startPos
-    cs[3] endPos
-    cs[4] power
-    cs[5] group
-    cs[6] chargingPort
-    cs[7] allowedPowerOutput
-    cs[8] groupPower
-    '''
-    for cs in cs_list:
-        # text to insert
-        new_cs_list += (
-            '\t<chargingStation id="'+cs[0]+'" lane="'+cs[0]+'" startPos="'+cs[0]+'" endPos="'+cs[0]+'" friendlyPos="true" power="'+cs[0]+'">\n'
-            '\t\t<param key="group" value="'+cs[0]+'"/>\n'
-            '\t\t<param key="chargingPort" value="'+cs[0]+'"/>\n'
-            '\t\t<param key="allowedPowerOutput" value="'+cs[0]+'"/>\n'
-            '\t\t<param key="groupPower" value="'+cs[0]+'"/>\n'
-            '\t\t<param key="chargeDelay" value="5"/>\n'
-            '\t</chargingStation>\n'
-        )
-
-    # insert the new node
-    content = content[:index] + new_cs_list + content[index:]
-
-    # save modified file
-    with open("infraestructura.add.xml", "w") as f:
-        f.write(content)
-
-def individual_to_charging_stations(ind, edge_ids):    
-    '''
-    Each individual has the following structure, taking a solution with 5 charging stations as an example:
-    [6, 43, 78, 25, 11] index of the edge (from edge_ids list) where the charging station is located
-    '''
-    cs_list = []
-    for gen in range(0,len(ind.genome)): # iterate over the charging stations (gen = genome column index)
-        lane = get_lane(edge_ids[ind.genome[gen]])
-        for cp in range(3): # iterate over charging points of each charging station
-            # Convert each individual to a charging station xml representation
-            cs = [
-                edge_ids[ind.genome[gen]] + '_' + cp,  # id
-                lane,  # lane
-                1.0,  # startPos
-                4.0,  # endPos
-                150000,  # power
-                ind.genome[gen],  # group
-                _,  # chargingPort
-                150000,  # allowedPowerOutput
-                200000  # groupPower
-                ]
-            cs_list.append(cs)
-    return cs_list
+if __name__ == "__main__":
+    SUMO_BINARY = "/bin/sumo-gui"
+    FOLDER = "cs_example/"  
+    CONFIG_FILE = "simulation.sumocfg"
+    NODES_FILE = "network.nod.xml"
+    EDGES_FILE = "network.edg.xml"
+    ADDITIONAL_FILE = "infrastructure.add.xml"
+    NETWORK_FILE = "network.net.xml"
+    WORKING_FOLDER = folder_setup(FOLDER, GA_PARAMS, [CONFIG_FILE, NODES_FILE, EDGES_FILE, ADDITIONAL_FILE, NETWORK_FILE, "routes.rou.xml"])
+    CONFIG_FILE = WORKING_FOLDER+"simulation.sumocfg"
+    NODES_FILE = WORKING_FOLDER+"network.nod.xml"
+    EDGES_FILE = WORKING_FOLDER+"network.edg.xml"
+    ADDITIONAL_FILE = WORKING_FOLDER+"infrastructure.add.xml"
+    NETWORK_FILE = WORKING_FOLDER+"network.net.xml"
+    build_world()
