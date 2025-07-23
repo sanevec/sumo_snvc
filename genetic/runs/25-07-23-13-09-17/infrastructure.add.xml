@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-07-14 12:07:18.505702 by osmWebWizard.py UNKNOWN
+  options: 
+-->
+
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+   <edgeData id="wizard_example" period="3600" file="edgeData.xml"/>
+
+<chargingStation id="cs_-236178542#1_0" lane="cs_lanes_-236178542#1_0" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="100"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_-236178542#1_1" lane="cs_lanes_-236178542#1_1" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="100"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_-236178542#1_2" lane="cs_lanes_-236178542#1_2" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="100"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+
+<chargingStation id="cs_39723679_0" lane="cs_lanes_39723679_0" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="2662"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_39723679_1" lane="cs_lanes_39723679_1" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="2662"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_39723679_2" lane="cs_lanes_39723679_2" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="2662"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+
+<chargingStation id="cs_311743584_0" lane="cs_lanes_311743584_0" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="2241"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_311743584_1" lane="cs_lanes_311743584_1" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="2241"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_311743584_2" lane="cs_lanes_311743584_2" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="2241"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+
+<chargingStation id="cs_39723676_0" lane="cs_lanes_39723676_0" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="2661"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_39723676_1" lane="cs_lanes_39723676_1" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="2661"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_39723676_2" lane="cs_lanes_39723676_2" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="2661"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+
+<chargingStation id="cs_238193475_0" lane="cs_lanes_238193475_0" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="1735"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_238193475_1" lane="cs_lanes_238193475_1" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="1735"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+<chargingStation id="cs_238193475_2" lane="cs_lanes_238193475_2" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">
+    <param key="group" value="1735"/>
+    <param key="chargingPort" value="CCS2"/>
+    <param key="allowedPowerOutput" value="150000"/>
+    <param key="groupPower" value="200000"/>
+    <param key="chargeDelay" value="5"/>
+</chargingStation>
+</additional>

@@ -22,15 +22,15 @@ import traci
 
 def build_world(cs_list=None):    
     #add_charging_stations(cs_list)
-    print(obtain_edge_ids())
-    print(get_edge_nodes("e7"))
-    old = get_edge_block("e7")
-    print(old)
-    new = replace_attribute(old, "speed", "20.0")
-    print(new)
-    replace_xml_block_in_file("cs_example/network.edg.xml", old, new)
-    print(load_nodes())
-    add_charging_stations([6,7])
+    #print(obtain_edge_ids())
+    #print(get_edge_nodes("e7"))
+    #old = get_edge_block("e7")
+    #print(old)
+    #new = replace_attribute(old, "speed", "20.0")
+    #print(new)
+    #replace_xml_block_in_file("cs_example/network.edg.xml", old, new)
+    #print(load_nodes())
+    add_charging_stations([100])
     os.system(os.environ["SUMO_HOME"]+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE)
     run()
 
@@ -70,8 +70,14 @@ def folder_setup(src_folder, param_dict, file_names):
     print(f"Created folder: {folder_path}")
     return folder_path
 
-def add_charging_stations(cs_list=[0]):
+def add_charging_stations(cs_list=None):    
     edge_ids = obtain_edge_ids()
+    print(f"Edge IDs: {edge_ids[edge_ids.index('39723679')]}")  # Example edge ID for debugging
+    #cs_list.append(edge_ids.index('39723679'))
+    #cs_list.append(edge_ids.index('1374141275#0'))
+    #cs_list.append(edge_ids.index('311743584'))
+    #cs_list.append(edge_ids.index('39723676'))
+    #cs_list.append(edge_ids.index('238193475'))
     for cs in cs_list:
         edge_id = edge_ids[cs]
         # Now we have the edge_id where we want to add the charging station
@@ -534,13 +540,9 @@ def run2():
 
 if __name__ == "__main__":
     SUMO_BINARY = "/bin/sumo-gui"
-    FOLDER = "cs_example/"  
-    CONFIG_FILE = "simulation.sumocfg"
-    NODES_FILE = "network.nod.xml"
-    EDGES_FILE = "network.edg.xml"
-    ADDITIONAL_FILE = "infrastructure.add.xml"
-    NETWORK_FILE = "network.net.xml"
-    WORKING_FOLDER = folder_setup(FOLDER, GA_PARAMS, [CONFIG_FILE, NODES_FILE, EDGES_FILE, ADDITIONAL_FILE, NETWORK_FILE, "routes.rou.xml"])
+    FOLDER = "sevilla/"      
+    file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
+    WORKING_FOLDER = folder_setup(FOLDER, GA_PARAMS, file_list)
     CONFIG_FILE = WORKING_FOLDER+"simulation.sumocfg"
     NODES_FILE = WORKING_FOLDER+"network.nod.xml"
     EDGES_FILE = WORKING_FOLDER+"network.edg.xml"
