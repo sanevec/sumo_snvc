@@ -30,7 +30,9 @@ def build_world(cs_list=None):
     #print(new)
     #replace_xml_block_in_file("cs_example/network.edg.xml", old, new)
     #print(load_nodes())
-    add_charging_stations([100])
+    import random
+    add_charging_stations(random.sample(range(len(obtain_edge_ids_no_roundabouts())), 150))
+    #add_charging_stations([200, 2662, 975, 2241, 2661, 1735])
     os.system(os.environ["SUMO_HOME"]+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE)
     run()
 
@@ -71,15 +73,12 @@ def folder_setup(src_folder, param_dict, file_names):
     return folder_path
 
 def add_charging_stations(cs_list=None):    
-    edge_ids = obtain_edge_ids()
-    print(f"Edge IDs: {edge_ids[edge_ids.index('39723679')]}")  # Example edge ID for debugging
-    #cs_list.append(edge_ids.index('39723679'))
-    #cs_list.append(edge_ids.index('1374141275#0'))
-    #cs_list.append(edge_ids.index('311743584'))
-    #cs_list.append(edge_ids.index('39723676'))
-    #cs_list.append(edge_ids.index('238193475'))
+    edge_ids = obtain_edge_ids_no_roundabouts()
+    #print(f"Edge IDs: {edge_ids[edge_ids.index('39723679')]}")  # Example edge ID for debugging
+   
     for cs in cs_list:
         edge_id = edge_ids[cs]
+        print('Index: '+str(cs)+', Edge ID: '+str(edge_id))
         # Now we have the edge_id where we want to add the charging station
         # First, we need to get the point in the edge where we want to place the charging station starting node
         edge_xml = get_edge_block(edge_id)
@@ -128,8 +127,8 @@ def add_charging_stations(cs_list=None):
             # Build new shape strings
             new_shape1 = "".join(f"{x},{y} " for x, y in first_half)
             new_shape2 = "".join(f"{x},{y} " for x, y in second_half)
-            first_half_edge = replace_attribute(first_half_edge, "shape", new_shape1)
-            second_half_edge = replace_attribute(second_half_edge, "shape", new_shape2)
+            first_half_edge = replace_attribute(first_half_edge, "shape", new_shape1[:-1])
+            second_half_edge = replace_attribute(second_half_edge, "shape", new_shape2[:-1])
         # Now we replace the old edge block in the edges file with the two new edges
         replace_xml_block_in_file(EDGES_FILE, edge_xml, first_half_edge + second_half_edge)
         # And finally, we add the charging station structure
@@ -138,6 +137,7 @@ def add_charging_stations(cs_list=None):
             x2, y2 = second_half[-1]
         x1, y1, x2, y2 = generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xm, ym)
         add_charging_station(edge_id, cs, x1, y1, x2, y2, 3)
+    print('Charging stations added successfully')
 
 def obtain_edge_ids():
     '''
@@ -153,6 +153,38 @@ def obtain_edge_ids():
                 end = line.find('"', start)
                 edge_id = line[start:end]
                 edge_ids.append(edge_id)
+    return edge_ids
+
+def obtain_edge_ids_no_roundabouts():
+    '''
+    Obtains all edge IDs from the edges file and returns them as a list,
+    excluding those that belong to roundabouts.
+    '''
+    edge_ids = []
+    roundabout_edges = set()
+
+    with open(EDGES_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+        lines = content.splitlines()
+
+        # First pass: find all roundabout edges
+        for line in lines:
+            if '<roundabout ' in line:
+                start = line.find('edges="') + 7
+                end = line.find('"', start)
+                edges_str = line[start:end]
+                for edge in edges_str.split():
+                    roundabout_edges.add(edge)
+
+        # Second pass: collect edges excluding roundabouts
+        for line in lines:
+            if '<edge id="' in line:
+                start = line.find('id="') + 4
+                end = line.find('"', start)
+                edge_id = line[start:end]
+                if edge_id not in roundabout_edges:
+                    edge_ids.append(edge_id)
+
     return edge_ids
 
 def get_edge_nodes(edge_id):
@@ -540,7 +572,8 @@ def run2():
 
 if __name__ == "__main__":
     SUMO_BINARY = "/bin/sumo-gui"
-    FOLDER = "sevilla/"      
+    #FOLDER = "cs_example/"   
+    FOLDER = "sevilla/"    
     file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
     WORKING_FOLDER = folder_setup(FOLDER, GA_PARAMS, file_list)
     CONFIG_FILE = WORKING_FOLDER+"simulation.sumocfg"

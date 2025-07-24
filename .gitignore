@@ -62,4 +62,5 @@ tools/sumolib/shapes/__pycache__/
 tools/sumolib/visualization/__pycache__/
 tools/traci/__pycache__/
 tools/xml/__pycache__/
+genetic/runs/
 
