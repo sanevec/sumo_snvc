@@ -22,7 +22,11 @@ Clone the repository:
 ```bash
 git clone  https://github.com/sanevec/sumo_snvc
 cd sumo_snvc
-export SUMO_HOME="$PWD"
+```
+Set SUMO_HOME environment variable:
+
+```bash
+python3 set_sumo_home.py
 ```
 Install dependencies:
 

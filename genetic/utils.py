@@ -3,7 +3,9 @@ import os
 import math
 from datetime import datetime
 import re
-from config import GA_PARAMS
+import itertools
+import argparse
+import json
 
 # Read the SUMO_HOME environment variable
 sumo_home = os.environ.get("SUMO_HOME")
@@ -20,42 +22,35 @@ if tools_path not in sys.path:
 
 import traci
 
-def build_world(cs_list=None):    
-    #add_charging_stations(cs_list)
-    #print(obtain_edge_ids())
-    #print(get_edge_nodes("e7"))
-    #old = get_edge_block("e7")
-    #print(old)
-    #new = replace_attribute(old, "speed", "20.0")
-    #print(new)
-    #replace_xml_block_in_file("cs_example/network.edg.xml", old, new)
-    #print(load_nodes())
-    import random
-    add_charging_stations(random.sample(range(len(obtain_edge_ids_no_roundabouts())), 150))
-    #add_charging_stations([200, 2662, 975, 2241, 2661, 1735])
-    os.system(os.environ["SUMO_HOME"]+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE)
-    run()
-
-def folder_setup(src_folder, param_dict, file_names):
+def folder_setup(param_dict, file_names):
     """
     Creates a timestamped folder, copies the given files into it, and writes params.txt.
 
     Parameters:
-        src_folder (str): Path to the folder containing the original files (must end with '/')
+        FOLDER (str): Path to the folder containing the original files (must end with '/')
         param_dict (dict): Dictionary of parameters to be written to params.txt
-        file_names (list): List of filenames to copy from src_folder to the new folder
+        file_names (list): List of filenames to copy from FOLDER to the new folder
 
     Returns:
         str: Path to the created folder
     """
-    # Generate timestamp and folder path
-    timestamp = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-    folder_path = f"runs/{timestamp}/"
+    # Generate date prefix: YYMMDD
+    date_prefix = datetime.now().strftime("%y%m%d")
+
+    # Look for existing runs with same date prefix
+    runs_dir = "runs/"
+    os.makedirs(runs_dir, exist_ok=True)
+    existing = [d for d in os.listdir(runs_dir) if os.path.isdir(os.path.join(runs_dir, d)) and d.startswith(date_prefix)]
+
+    # Count how many runs already exist for today
+    n = len(existing) + 1
+    folder_name = f"{date_prefix}-{n}"
+    folder_path = os.path.join(runs_dir, folder_name) + "/"
     os.makedirs(folder_path, exist_ok=True)
 
     # Copy files
     for name in file_names:
-        src_path = src_folder + name
+        src_path = FOLDER + name
         dst_path = folder_path + name
 
         with open(src_path, 'r', encoding='utf-8') as f_in:
@@ -72,11 +67,9 @@ def folder_setup(src_folder, param_dict, file_names):
     print(f"Created folder: {folder_path}")
     return folder_path
 
-def add_charging_stations(cs_list=None):    
-    edge_ids = obtain_edge_ids_no_roundabouts()
-    #print(f"Edge IDs: {edge_ids[edge_ids.index('39723679')]}")  # Example edge ID for debugging
-   
-    for cs in cs_list:
+def add_charging_stations():    
+    edge_ids = obtain_edge_ids_no_roundabouts()   
+    for cs in CS_LIST:
         edge_id = edge_ids[cs]
         print('Index: '+str(cs)+', Edge ID: '+str(edge_id))
         # Now we have the edge_id where we want to add the charging station
@@ -136,7 +129,7 @@ def add_charging_stations(cs_list=None):
             x1, y1 = first_half[0]
             x2, y2 = second_half[-1]
         x1, y1, x2, y2 = generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xm, ym)
-        add_charging_station(edge_id, cs, x1, y1, x2, y2, 3)
+        add_charging_station(edge_id, cs, x1, y1, x2, y2)
     print('Charging stations added successfully')
 
 def obtain_edge_ids():
@@ -259,7 +252,7 @@ def get_edge_block(edge_id):
     else:
         return None
 
-def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, n_cs):
+def add_charging_station(edge_id, cs_group, x1, y1, x2, y2):
     '''
     Adds a charging station to the network by creating the necessary nodes and edges.
     The charging station consists of a start node, an end node, and a lane with multiple
@@ -269,12 +262,12 @@ def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, n_cs):
     cs_end = f"cs_end_{edge_id}"
     add_node_to_xml(NODES_FILE, cs_start, x1, y1)
     add_node_to_xml(NODES_FILE, cs_end, x2, y2)  
-    lanes = "".join(f'<lane index="{i}" speed="13.89"/>' for i in range(n_cs))
+    lanes = "".join(f'<lane index="{i}" speed="13.89"/>' for i in range(CS_SIZE))
     edges = f"""
     <edge id="to_cs_{edge_id}" from="cs_{edge_id}" to="{cs_start}" priority="-1">
         <lane index="0" speed="13.89"/>
     </edge>
-    <edge id="cs_lanes_{edge_id}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="3">
+    <edge id="cs_lanes_{edge_id}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{CS_SIZE}">
         {lanes}
     </edge>
     <edge id="from_cs_{edge_id}" from="{cs_end}" to="cs_{edge_id}" priority="-1">
@@ -288,7 +281,7 @@ def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, n_cs):
         f'\n    <param key="allowedPowerOutput" value="150000"/>'
         f'\n    <param key="groupPower" value="200000"/>'
         f'\n    <param key="chargeDelay" value="5"/>'
-        f'\n</chargingStation>' for i in range(n_cs))
+        f'\n</chargingStation>' for i in range(CS_SIZE))
     add_edge_to_xml(EDGES_FILE, edges)
     add_cs_to_xml(ADDITIONAL_FILE, charging_points)
         
@@ -479,7 +472,29 @@ def generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xp, yp, length=6
 
     return qx1, qy1, qx2, qy2
 
-###############################################
+def expand_grid(flat_config):
+    """
+    Expands a flat configuration dictionary into all combinations of its list values.
+    Each key in the dictionary can either be a scalar or a list.
+    If a key's value is a list, it will be expanded into multiple configurations.
+    Returns a generator yielding dictionaries with all combinations.
+    """
+    grid_keys = []
+    grid_values = []
+
+    for k, v in flat_config.items():
+        if isinstance(v, list):
+            grid_keys.append(k)
+            grid_values.append(v)
+        else:
+            # Wrap scalar values into a list
+            grid_keys.append(k)
+            grid_values.append([v])
+
+    for combination in itertools.product(*grid_values):
+        yield dict(zip(grid_keys, combination))
+
+############################################
 
 def run():
     traci.start([os.environ["SUMO_HOME"]+SUMO_BINARY, "-c", CONFIG_FILE])
@@ -539,7 +554,7 @@ def setChargingStationPowers(vehList):
         #print(f"Estacion {csId} tiene power: {actualPower}, maxPsoc: {maxPsoc}, maxPcp: {maxPcp}, maxPev: {maxPev}, factor: {factor}")
 
 
-def run2():
+def run_debug():
     traci.start([os.environ["SUMO_HOME"]+SUMO_BINARY, "-c", CONFIG_FILE])
     while traci.simulation.getMinExpectedNumber() > 0:
         traci.simulationStep()    
@@ -569,16 +584,77 @@ def run2():
             
     traci.close()
 
-
 if __name__ == "__main__":
-    SUMO_BINARY = "/bin/sumo-gui"
-    #FOLDER = "cs_example/"   
-    FOLDER = "sevilla/"    
-    file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
-    WORKING_FOLDER = folder_setup(FOLDER, GA_PARAMS, file_list)
-    CONFIG_FILE = WORKING_FOLDER+"simulation.sumocfg"
-    NODES_FILE = WORKING_FOLDER+"network.nod.xml"
-    EDGES_FILE = WORKING_FOLDER+"network.edg.xml"
-    ADDITIONAL_FILE = WORKING_FOLDER+"infrastructure.add.xml"
-    NETWORK_FILE = WORKING_FOLDER+"network.net.xml"
-    build_world()
+    parser = argparse.ArgumentParser(
+        description="Run SUMO with configuration file containing global parameters.",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        required=True,
+        help=(
+            "Path to a JSON file with the following required keys:\n"
+            "  SUMO_BINARY      (str)          → path to SUMO binary (e.g. '/bin/sumo-gui')\n"
+            "  FOLDER           (str)          → input folder with SUMO network files\n"
+            "  CONFIG_FILE      (str)          → .sumocfg file name used in each run\n"
+            "  NODES_FILE       (str)          → .nod.xml file name used in each run\n"
+            "  EDGES_FILE       (str)          → .edg.xml file name used in each run\n"
+            "  ADDITIONAL_FILE  (str)          → .add.xml file name used in each run\n"
+            "  NETWORK_FILE     (str)          → .net.xml output file name\n"
+            "  CS_LIST          (list of int)  → list of edge indices for charging stations\n"
+            "  CS_SIZE          (int)          → number of charging lanes per station group\n"
+            "If any are lists, the script will perform a grid search over all combinations."
+        )
+    )
+    args = parser.parse_args()
+
+    with open(args.config, "r", encoding="utf-8") as f:
+        base_config = json.load(f)
+
+    # Define the set of required keys
+    required_keys = [
+        "SUMO_BINARY",
+        "FOLDER",
+        "CONFIG_FILE",
+        "NODES_FILE",
+        "EDGES_FILE",
+        "ADDITIONAL_FILE",
+        "NETWORK_FILE",
+        "CS_LIST",
+        "CS_SIZE"
+    ]
+
+    # Check if any required key is missing
+    missing_keys = required_keys - base_config.keys()
+
+    if missing_keys:
+        raise ValueError(f"Missing required configuration keys: {', '.join(missing_keys)}")
+
+    # Obtain grid configurations and run simulations
+    for i, config in enumerate(expand_grid(base_config)):
+        print(f"\n--- Running configuration {i+1} ---")       
+        for k, v in config.items():
+            print(f"{k}: {v} ({type(v).__name__})")
+
+        # Set up paths and files based on the configuration
+        FOLDER = config["FOLDER"]
+        file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
+        working_folder = folder_setup(config, file_list)        
+        NODES_FILE = working_folder + config["NODES_FILE"]
+        EDGES_FILE = working_folder + config["EDGES_FILE"]
+        ADDITIONAL_FILE = working_folder + config["ADDITIONAL_FILE"]
+        NETWORK_FILE = working_folder + config["NETWORK_FILE"]
+
+        # Add charging stations
+        CS_LIST = config["CS_LIST"]
+        CS_SIZE = config["CS_SIZE"]
+        add_charging_stations()
+
+        # Convert network files
+        os.system(os.environ["SUMO_HOME"]+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE) 
+
+        # Run SUMO simulation
+        SUMO_BINARY = config["SUMO_BINARY"]
+        CONFIG_FILE = working_folder + config["CONFIG_FILE"]      
+        run()  
