@@ -14,7 +14,13 @@
   This project implements the EV fast charging and charge-site power limitations described <a href="https://doi.org/10.1007/978-3-031-87345-4_6">in this paper</a> for enhanced simulation capabilities.
 </p>
 
+---
 
+**Author**: Juan Alberto Gallardo Gómez - jgallardo7@us.es  
+**Date**: 2025   
+**Version**: 1.0.0
+
+---
 
 ## 🛠️ Build and Installation
 Clone the repository:
@@ -51,7 +57,7 @@ A basic SUMO test simulation is available in the simulation/cs_example/ folder. 
 cd simulation
 ../bin/sumo-gui -c cs_example/simulation.sumocfg
 ```
-To use the charging add-on capabilities, it is required to launch the simulation from a Python script and control every step using TraCI. A Python virtual environment is required to launch the simulation. Instructions to create it (outside of the project folder):
+To use the charging add-on capabilities and get the log information, it is required to launch the simulation from a Python script and control every step using TraCI. A Python virtual environment is required to launch the simulation. Instructions to create it (outside of the project folder):
 ```bash
 python3 -m venv venv-sumo
 source venv-sumo/bin/activate
