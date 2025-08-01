@@ -1,0 +1,9 @@
+SUMO_BINARY=/bin/sumo-gui
+FOLDER=cs_example/
+CONFIG_FILE=simulation.sumocfg
+NODES_FILE=network.nod.xml
+EDGES_FILE=network.edg.xml
+ADDITIONAL_FILE=infrastructure.add.xml
+NETWORK_FILE=network.net.xml
+CS_LIST=[6, 7]
+CS_SIZE=5

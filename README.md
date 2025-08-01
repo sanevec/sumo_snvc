@@ -45,20 +45,24 @@ cmake --build build -j$(nproc)
 ## 🚀 Run a Test
 After compilation, binaries will be located in the bin/ folder.
 
-A basic SUMO test simulation is available in the genetic/ folder. Run it like this:
+A basic SUMO test simulation is available in the simulation/cs_example/ folder. Run it like this:
 
 ```bash
-cd genetic
-../bin/sumo-gui -c simulation.sumocfg
+cd simulation
+../bin/sumo-gui -c cs_example/simulation.sumocfg
 ```
 To use the charging add-on capabilities, it is required to launch the simulation from a Python script and control every step using TraCI. A Python virtual environment is required to launch the simulation. Instructions to create it (outside of the project folder):
 ```bash
 python3 -m venv venv-sumo
 source venv-sumo/bin/activate
 ```
-To run the test from genetic/ folder:
+To run the test from simulation/ folder:
 ```bash
-python3 traci_test.py
+python3 simulation.py --config test.json
+```
+You can get information about the usage of the script with:
+```bash
+python3 simulation.py --help
 ```
 ## 🧬 Genetic Algorithm
 🚧 Work in Progress...

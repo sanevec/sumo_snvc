@@ -1,0 +1,55 @@
+<edges>
+    <edge id="e1" from="start" to="road-to-cs" priority="1">
+        <lane index="0" speed="13.89" length="60.00"/>
+    </edge>
+    <edge id="e2" from="road-to-cs" to="road-from-cs" priority="1">
+        <lane index="0" speed="13.89" length="70.00"/>
+    </edge>
+    <edge id="e3" from="road-from-cs" to="end" priority="1">
+        <lane index="0" speed="13.89" length="70.00"/>
+    </edge>
+    <edge id="e4" from="road-to-cs" to="cs-start" priority="1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="e5" from="cs-start" to="cs-end" priority="1" numLanes="3">
+        <lane index="0" speed="13.89"/>
+        <lane index="1" speed="13.89"/>
+        <lane index="2" speed="13.89"/>
+    </edge>
+    <edge id="e6" from="cs-end" to="road-to-cs" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="first_e7" from="start2" to="cs_e7" priority="-1" shape="100.0,0.0 150.0,100.0 200.0,100.0">
+        <lane index="0" speed="20.0"/>
+    </edge>
+    <edge id="second_e7" from="cs_e7" to="end2" priority="-1" shape="200.0,100.0 300.0,200.0">
+        <lane index="0" speed="20.0"/>
+    </edge>
+    <edge id="first_e8" from="start3" to="cs_e8" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="second_e8" from="cs_e8" to="end2" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+
+    <edge id="to_cs_e7" from="cs_e7" to="cs_start_e7" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="cs_lanes_e7" from="cs_start_e7" to="cs_end_e7" priority="1" numLanes="5">
+        <lane index="0" speed="13.89"/><lane index="1" speed="13.89"/><lane index="2" speed="13.89"/><lane index="3" speed="13.89"/><lane index="4" speed="13.89"/>
+    </edge>
+    <edge id="from_cs_e7" from="cs_end_e7" to="cs_e7" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+
+    <edge id="to_cs_e8" from="cs_e8" to="cs_start_e8" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="cs_lanes_e8" from="cs_start_e8" to="cs_end_e8" priority="1" numLanes="5">
+        <lane index="0" speed="13.89"/><lane index="1" speed="13.89"/><lane index="2" speed="13.89"/><lane index="3" speed="13.89"/><lane index="4" speed="13.89"/>
+    </edge>
+    <edge id="from_cs_e8" from="cs_end_e8" to="cs_e8" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+</edges>
+

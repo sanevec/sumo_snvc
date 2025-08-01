@@ -654,6 +654,7 @@ if __name__ == "__main__":
         # Convert network files
         os.system(os.environ["SUMO_HOME"]+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE) 
 
+        
         # Run SUMO simulation
         SUMO_BINARY = config["SUMO_BINARY"]
         CONFIG_FILE = working_folder + config["CONFIG_FILE"]      
