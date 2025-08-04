@@ -23,39 +23,30 @@
 ---
 
 ## 🛠️ Build and Installation
+You should have the latest version of SUMO installed, in linux:
+
+```bash
+sudo add-apt-repository ppa:sumo/stable
+sudo apt-get update
+sudo apt-get install sumo sumo-tools sumo-doc
+```
 Clone the repository:
 
 ```bash
 git clone  https://github.com/sanevec/sumo_snvc
 cd sumo_snvc
 ```
-Set SUMO_HOME environment variable:
+In case you have a custom SUMO build, you can set SUMO_HOME environment variable as your current working directory:
 
 ```bash
 python3 set_sumo_home.py
 ```
-Install dependencies:
-
-```bash
-sudo apt-get install $(cat build_config/build_req_deb.txt build_config/tools_req_deb.txt)
-sudo apt-get install libgdal-dev
-sudo apt update
-sudo apt install libopenscenegraph-dev openscenegraph libopenthreads-dev
-```
-Configure and build:
-
-```bash
-cmake -B build .
-cmake --build build -j$(nproc)
-```
 ## 🚀 Run a Test
-After compilation, binaries will be located in the bin/ folder.
-
 A basic SUMO test simulation is available in the simulation/cs_example/ folder. Run it like this:
 
 ```bash
 cd simulation
-../bin/sumo-gui -c cs_example/simulation.sumocfg
+sumo-gui -c cs_example/simulation.sumocfg
 ```
 To use the charging add-on capabilities and get the log information, it is required to launch the simulation from a Python script and control every step using TraCI. A Python virtual environment is required to launch the simulation. Instructions to create it (outside of the project folder):
 ```bash
