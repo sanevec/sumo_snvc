@@ -1,0 +1,10 @@
+buttons
+
+edit_default
+
+edit
+
+# edit dialog disabled until #16898
+#edit_dialog
+
+load

@@ -1,0 +1,10 @@
+create
+
+programs
+
+attributes
+
+# disabled phase tests in external tests
+#phases
+
+file
