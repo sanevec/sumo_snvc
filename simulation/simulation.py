@@ -22,6 +22,28 @@ if tools_path not in sys.path:
 
 import traci
 
+def expand_grid(flat_config):
+    """
+    Expands a flat configuration dictionary into all combinations of its list values.
+    Each key in the dictionary can either be a scalar or a list.
+    If a key's value is a list, it will be expanded into multiple configurations.
+    Returns a generator yielding dictionaries with all combinations.
+    """
+    grid_keys = []
+    grid_values = []
+
+    for k, v in flat_config.items():
+        if isinstance(v, list):
+            grid_keys.append(k)
+            grid_values.append(v)
+        else:
+            # Wrap scalar values into a list
+            grid_keys.append(k)
+            grid_values.append([v])
+
+    for combination in itertools.product(*grid_values):
+        yield dict(zip(grid_keys, combination))
+
 def folder_setup(param_dict, file_names):
     """
     Creates a timestamped folder, copies the given files into it, and writes params.txt.
@@ -471,28 +493,6 @@ def generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xp, yp, length=6
     qy2 = my + dy_half
 
     return qx1, qy1, qx2, qy2
-
-def expand_grid(flat_config):
-    """
-    Expands a flat configuration dictionary into all combinations of its list values.
-    Each key in the dictionary can either be a scalar or a list.
-    If a key's value is a list, it will be expanded into multiple configurations.
-    Returns a generator yielding dictionaries with all combinations.
-    """
-    grid_keys = []
-    grid_values = []
-
-    for k, v in flat_config.items():
-        if isinstance(v, list):
-            grid_keys.append(k)
-            grid_values.append(v)
-        else:
-            # Wrap scalar values into a list
-            grid_keys.append(k)
-            grid_values.append([v])
-
-    for combination in itertools.product(*grid_values):
-        yield dict(zip(grid_keys, combination))
 
 ############################################
 
