@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+#
+# Author: Juan Alberto Gallardo Gómez <jgallardo7@us.es>
+# Date: 2025
+# Description: Script to run SUMO simulations.
+# License: Eclipse Public License - v 2.0 (EPL-2.0)
+#
+# Usage: Run with `--help` to see available command-line options.
+
 import sys
 import os
 import math
@@ -6,21 +15,6 @@ import re
 import itertools
 import argparse
 import json
-
-# Read the SUMO_HOME environment variable
-sumo_home = os.environ.get("SUMO_HOME")
-
-if sumo_home is None:
-    raise EnvironmentError("The SUMO_HOME environment variable is not defined.")
-
-# Build the path to the tools/ folder inside SUMO_HOME
-tools_path = os.path.join(sumo_home, "tools")
-
-# Add it to sys.path if not already present
-if tools_path not in sys.path:
-    sys.path.append(tools_path)
-
-import traci
 
 def expand_grid(flat_config):
     """
@@ -92,8 +86,13 @@ def folder_setup(param_dict, file_names):
 def add_charging_stations():    
     edge_ids = obtain_edge_ids_no_roundabouts()   
     for cs in CS_LIST:
-        edge_id = edge_ids[cs]
-        print('Index: '+str(cs)+', Edge ID: '+str(edge_id))
+        #edge_id = edge_ids[cs]
+        edge_id = cs
+        if edge_id not in edge_ids:
+            print(f"Edge ID {edge_id} not found in the edges file. Skipping charging station addition.")
+            continue
+        #print('Index: '+str(cs)+', Edge ID: '+str(edge_id))
+        print('Adding CS to Edge ID: '+str(edge_id))
         # Now we have the edge_id where we want to add the charging station
         # First, we need to get the point in the edge where we want to place the charging station starting node
         edge_xml = get_edge_block(edge_id)
@@ -297,11 +296,11 @@ def add_charging_station(edge_id, cs_group, x1, y1, x2, y2):
     </edge>     
     """
     charging_points = "".join(
-        f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}" startPos="30.0" endPos="35.0" friendlyPos="true" power="150000">'
+        f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}" startPos="30.0" endPos="35.0" friendlyPos="true" power="{CS_POWER[0]}">'
         f'\n    <param key="group" value="{cs_group}"/>'
         f'\n    <param key="chargingPort" value="CCS2"/>'
-        f'\n    <param key="allowedPowerOutput" value="150000"/>'
-        f'\n    <param key="groupPower" value="200000"/>'
+        f'\n    <param key="allowedPowerOutput" value="{CS_POWER[0]}"/>'
+        f'\n    <param key="groupPower" value="{CS_POWER[0]*CS_SIZE*CS_POWER[1]}"/>'
         f'\n    <param key="chargeDelay" value="5"/>'
         f'\n</chargingStation>' for i in range(CS_SIZE))
     add_edge_to_xml(EDGES_FILE, edges)
@@ -497,11 +496,17 @@ def generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xp, yp, length=6
 ############################################
 
 def run():
-    traci.start([os.environ["SUMO_HOME"]+SUMO_BINARY, "-c", CONFIG_FILE])
+    # Start the SUMO simulation
+    traci.start([SUMO_HOME+SUMO_BINARY, "-c", CONFIG_FILE])
+    
+    # Initialize the simulation information
+    simulationData = emissions.get_initial_simulation_information()
+    vehicleEmissions = {}
     vehList = []
-
+    # EXECUTE the simulation BY steps
     while traci.simulation.getMinExpectedNumber() > 0:
-        traci.simulationStep()        
+        traci.simulationStep()
+        # Vehicles which are starting to charge        
         for veh in traci.simulation.getStopStartingVehiclesIDList():
             csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
             if (csId != "NULL"):
@@ -509,10 +514,17 @@ def run():
                 vehList.append(veh)
                 traci.chargingstation.setParameter(csId, "desiredPower", 0)
                 traci.chargingstation.setParameter(csId, "aliquotPowerAdjustment", 1)
+        # Vehicles which are ending to charge
         for veh in traci.simulation.getStopEndingVehiclesIDList():
             vehList.remove(veh)
+        # Set power adjustments
         calculateAliquotPowerAdjustments(vehList)
         setChargingStationPowers(vehList)
+        # Get vehicle emissions at this step
+        vehicleEmissions[int(traci.simulation.getTime())] = emissions.get_instant_vehicle_emissions(simulationData)
+    # Get the final simulation information
+    emissions.get_final_simulation_information(simulationData, vehicleEmissions)
+    emissions.save_output_data(simulationData, vehicleEmissions, WORKING_FOLDER)
 
     traci.close()
 
@@ -585,6 +597,23 @@ def run_debug():
     traci.close()
 
 if __name__ == "__main__":
+
+    # Read the SUMO_HOME environment variable
+    SUMO_HOME = os.environ.get("SUMO_HOME")
+
+    if SUMO_HOME is None:
+        raise EnvironmentError("The SUMO_HOME environment variable is not defined.")
+
+    # Build the path to the tools/ folder inside SUMO_HOME
+    tools_path = os.path.join(SUMO_HOME, "tools")
+
+    # Add it to sys.path if not already present
+    if tools_path not in sys.path:
+        sys.path.append(tools_path)
+
+    import traci
+    import emissions
+
     parser = argparse.ArgumentParser(
         description="Run SUMO with configuration file containing global parameters.",
         formatter_class=argparse.RawTextHelpFormatter
@@ -604,6 +633,7 @@ if __name__ == "__main__":
             "  NETWORK_FILE     (str)          → .net.xml output file name\n"
             "  CS_LIST          (list of int)  → list of edge indices for charging stations\n"
             "  CS_SIZE          (int)          → number of charging lanes per station group\n"
+            "  CS_POWER         (list of int)  → charging point power and charging station power factor (size*power*factor)\n"
             "If any are lists, the script will perform a grid search over all combinations."
         )
     )
@@ -622,7 +652,8 @@ if __name__ == "__main__":
         "ADDITIONAL_FILE",
         "NETWORK_FILE",
         "CS_LIST",
-        "CS_SIZE"
+        "CS_SIZE",
+        "CS_POWER"
     ]
 
     # Check if any required key is missing
@@ -640,22 +671,23 @@ if __name__ == "__main__":
         # Set up paths and files based on the configuration
         FOLDER = config["FOLDER"]
         file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
-        working_folder = folder_setup(config, file_list)        
-        NODES_FILE = working_folder + config["NODES_FILE"]
-        EDGES_FILE = working_folder + config["EDGES_FILE"]
-        ADDITIONAL_FILE = working_folder + config["ADDITIONAL_FILE"]
-        NETWORK_FILE = working_folder + config["NETWORK_FILE"]
+        WORKING_FOLDER = folder_setup(config, file_list)        
+        NODES_FILE = WORKING_FOLDER + config["NODES_FILE"]
+        EDGES_FILE = WORKING_FOLDER + config["EDGES_FILE"]
+        ADDITIONAL_FILE = WORKING_FOLDER + config["ADDITIONAL_FILE"]
+        NETWORK_FILE = WORKING_FOLDER + config["NETWORK_FILE"]
 
         # Add charging stations
         CS_LIST = config["CS_LIST"]
         CS_SIZE = config["CS_SIZE"]
+        CS_POWER = config["CS_POWER"]
         add_charging_stations()
 
         # Convert network files
-        os.system(os.environ["SUMO_HOME"]+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE) 
+        os.system(SUMO_HOME+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE) 
 
         
         # Run SUMO simulation
         SUMO_BINARY = config["SUMO_BINARY"]
-        CONFIG_FILE = working_folder + config["CONFIG_FILE"]      
+        CONFIG_FILE = WORKING_FOLDER + config["CONFIG_FILE"]      
         run()  
