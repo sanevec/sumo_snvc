@@ -11,19 +11,25 @@
     <edge id="e4" from="road-to-cs" to="cs-start" priority="1">
         <lane index="0" speed="13.89"/>
     </edge>
-    <edge id="e5" from="cs-start" to="cs-end" priority="1" numLanes="3">
-        <lane index="0" speed="13.89"/>
-        <lane index="1" speed="13.89"/>
-        <lane index="2" speed="13.89"/>
+    <edge id="e5" from="cs-start" to="cs-end" priority="1">
     </edge>
-    <edge id="e6" from="cs-end" to="road-to-cs" priority="-1">
+    <edge id="e5-vuelta" from="cs-end" to="cs-start" priority="1">
+    </edge>
+    <edge id="e6" from="cs-end" to="road-from-cs" priority="-1">
         <lane index="0" speed="13.89"/>
     </edge>
-    <edge id="e7" from="start2" to="end2" priority="-1" shape="100.0,0.0 150.0,100.0 200.0,100.0 300.0,200.0">
+    <edge id="e7" from="cs-start" to="cs-start2" priority="1">
+    </edge>
+    <edge id="e8" from="cs-start2" to="cs-end2" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="e9" from="cs-end2" to="cs-end" priority="1">
+    </edge>
+    <!--<edge id="e7" from="start2" to="end2" priority="-1" shape="100.0,0.0 150.0,100.0 200.0,100.0 300.0,200.0">
         <lane index="0" speed="20.0"/>
     </edge>
     <edge id="e8" from="start3" to="end2" priority="-1">
         <lane index="0" speed="13.89"/>
-    </edge>
+    </edge>-->
 </edges>
 

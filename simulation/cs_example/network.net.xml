@@ -147,11 +147,13 @@
         <lane id="to_cs_e8_0" index="0" speed="13.89" length="50.28" shape="307.46,93.73 350.74,68.16"/>
     </edge>
 
+    <!-- 
     <tlLogic id="cs-start" type="static" programID="0" offset="0">
         <phase duration="82" state="GGG"/>
         <phase duration="3"  state="yyy"/>
         <phase duration="5"  state="rrr"/>
-    </tlLogic>
+    </tlLogic>   
+    -->    
 
     <junction id="cs-end" type="priority" x="50.00" y="85.00" incLanes="e5_0 e5_1 e5_2" intLanes=":cs-end_0_0" shape="59.60,81.00 50.00,81.00 49.60,83.02 49.11,83.55 48.41,83.76 47.52,83.65 46.42,83.21 44.99,86.07 49.46,87.96 53.11,88.76 55.95,88.46 57.98,87.06 59.19,84.58">
         <request index="0" response="0" foes="0" cont="0"/>

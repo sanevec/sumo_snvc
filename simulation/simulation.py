@@ -288,8 +288,9 @@ def add_charging_station(edge_id, cs_group, x1, y1, x2, y2):
     <edge id="to_cs_{edge_id}" from="cs_{edge_id}" to="{cs_start}" priority="-1">
         <lane index="0" speed="13.89"/>
     </edge>
-    <edge id="cs_lanes_{edge_id}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{CS_SIZE}">
+    <edge id="cs_lanes_{edge_id}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{CS_SIZE+1}">
         {lanes}
+        <lane index="{CS_SIZE}" speed="13.89"/> 
     </edge>
     <edge id="from_cs_{edge_id}" from="{cs_end}" to="cs_{edge_id}" priority="-1">
         <lane index="0" speed="13.89"/>
@@ -300,7 +301,7 @@ def add_charging_station(edge_id, cs_group, x1, y1, x2, y2):
         f'\n    <param key="group" value="{cs_group}"/>'
         f'\n    <param key="chargingPort" value="CCS2"/>'
         f'\n    <param key="allowedPowerOutput" value="{CS_POWER[0]}"/>'
-        f'\n    <param key="groupPower" value="{CS_POWER[0]*CS_SIZE*CS_POWER[1]}"/>'
+        f'\n    <param key="groupPower" value="{int(CS_POWER[0]*CS_SIZE*CS_POWER[1])}"/>'
         f'\n    <param key="chargeDelay" value="5"/>'
         f'\n</chargingStation>' for i in range(CS_SIZE))
     add_edge_to_xml(EDGES_FILE, edges)
@@ -524,9 +525,11 @@ def run():
         vehicleEmissions[int(traci.simulation.getTime())] = emissions.get_instant_vehicle_emissions(simulationData)
     # Get the final simulation information
     emissions.get_final_simulation_information(simulationData, vehicleEmissions)
-    emissions.save_output_data(simulationData, vehicleEmissions, WORKING_FOLDER)
 
     traci.close()
+
+    emissions.save_output_data(simulationData, vehicleEmissions, WORKING_FOLDER)
+    metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json")
 
 
 def calculateAliquotPowerAdjustments(vehList):
@@ -613,6 +616,7 @@ if __name__ == "__main__":
 
     import traci
     import emissions
+    import metrics
 
     parser = argparse.ArgumentParser(
         description="Run SUMO with configuration file containing global parameters.",

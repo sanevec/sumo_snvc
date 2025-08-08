@@ -1,6 +1,6 @@
 import traci
 import os
-#import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET
 '''
 SAMPLE USE AT MAIN SIMULATION FILE:
     import emissions
@@ -24,7 +24,7 @@ SAMPLE USE AT MAIN SIMULATION FILE:
     traci.close()
 '''
 
-def get_initial_simulation_information(saveStreetMap=False, saveBuildings=False):
+def get_initial_simulation_information(saveStreetMap=False, saveBuildings=False, buildingFilePath=None):
     simulationData = {}
     simulationData['simulationStepTime'] = traci.simulation.getDeltaT()
     mapSize = traci.simulation.getNetBoundary()
@@ -32,7 +32,7 @@ def get_initial_simulation_information(saveStreetMap=False, saveBuildings=False)
     if saveStreetMap:
         simulationData['map'] = get_map()
     if saveBuildings:
-        simulationData['buildings'] = get_buildings()
+        simulationData['buildings'] = get_buildings(buildingFilePath)
     return simulationData
 
 
@@ -60,7 +60,7 @@ def get_map():
 
     return mapData
 
-def get_buildings():
+def get_buildings(buildingFilePath):
     buildingsData = []
 
     # Open building (polygon) xml file from OSM and access to xml tree root
