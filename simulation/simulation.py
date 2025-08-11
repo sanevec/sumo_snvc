@@ -529,7 +529,7 @@ def run():
     traci.close()
 
     emissions.save_output_data(simulationData, vehicleEmissions, WORKING_FOLDER)
-    metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json")
+    metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json", CS_SIZE)
 
 
 def calculateAliquotPowerAdjustments(vehList):
