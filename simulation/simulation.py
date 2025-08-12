@@ -529,7 +529,8 @@ def run():
     traci.close()
 
     emissions.save_output_data(simulationData, vehicleEmissions, WORKING_FOLDER)
-    metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json", CS_SIZE)
+    charging_metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json", CS_SIZE)
+    traffic_metrics.extract_traffic_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "traffic_metrics.json")
 
 
 def calculateAliquotPowerAdjustments(vehList):
@@ -616,7 +617,8 @@ if __name__ == "__main__":
 
     import traci
     import emissions
-    import metrics
+    import charging_metrics
+    import traffic_metrics
 
     parser = argparse.ArgumentParser(
         description="Run SUMO with configuration file containing global parameters.",

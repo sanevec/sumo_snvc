@@ -11,6 +11,8 @@
     	<emission-output value="output-emissions.xml"/>
     	<lanedata-output value="output-lanedata.xml"/>
         <fcd-output value="output-fcd.xml"/>
+        <lanechange-output value="output-lanechange.xml"/>
+        <queue-output value="output-queue.xml"/>
     	<chargingstations-output value="output-chargingstations.xml"/>
         <chargingstations-output.aggregated value="true"/>
     	<deadlock-output value="output-deadlock.xml"/>
