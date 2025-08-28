@@ -580,16 +580,15 @@ def run_debug():
             stateOfCharge = currentCharge / capacity 
             #print('Vehículo: ' + veh + ' SOC: ' + str(stateOfCharge))
             #if stateOfCharge < 0.4:
-                
+
             route = traci.vehicle.getRoute(veh)
             csId_stationfinder = traci.vehicle.getParameter(veh, "device.stationfinder.chargingStation")
             csId_battery = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
+            print(f"Vehículo {veh} tiene ruta: {route} y battery: {csId_battery} y stationfinder: {csId_stationfinder}")  
             if csId_stationfinder != "" and csId_battery == "NULL":
-                print(f"Vehículo {veh} tiene ruta: {route} y battery: {csId_battery} y stationfinder: {csId_stationfinder}")
+                print(f"Rerutado {veh} tiene ruta: {route} y battery: {csId_battery} y stationfinder: {csId_stationfinder}")
                 #traci.vehicle.setParameter(veh, "device.battery.chargingStationId", csId_stationfinder)
             
-            print(f"Vehículo {veh} tiene ruta: {route} y battery: {csId_battery} y stationfinder: {csId_stationfinder}")
-
         for veh in traci.simulation.getStopStartingVehiclesIDList():
             csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
             print('Empezando parada coche: '+ veh + ' csId: ' + csId)
@@ -598,6 +597,33 @@ def run_debug():
             csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
             print('Saliendo parada coche: '+ veh + ' csId: ' + csId)
             
+    traci.close()
+
+def run_debug2():
+    data = reroutings.new_rerouting_data()
+
+    traci.start([os.environ["SUMO_HOME"] + SUMO_BINARY, "-c", CONFIG_FILE])
+    
+    while traci.simulation.getMinExpectedNumber() > 0:
+        traci.simulationStep()
+        sim_time = traci.simulation.getTime()
+
+        # --- Per-vehicle tick update (time-only logic) ---
+        for veh in traci.vehicle.getIDList():
+            csId_stationfinder = traci.vehicle.getParameter(veh, "device.stationfinder.chargingStation")  # 's'
+            csId_battery = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")  # 'b'
+
+            reroutings.tick_update_vehicle(data,veh,csId_stationfinder,csId_battery,sim_time)
+
+        # --- Arrivals (start of stop = arrival to final CS) ---
+        for veh in traci.simulation.getStopStartingVehiclesIDList():
+            csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
+            reroutings.handle_arrival(data,veh,csId,sim_time)
+
+    # ---- finalize + dump ----
+    result = reroutings.finalize_json(data)
+    reroutings.dump_json(result, WORKING_FOLDER + "rerouting_metrics.json")
+
     traci.close()
 
 if __name__ == "__main__":
@@ -617,6 +643,7 @@ if __name__ == "__main__":
 
     import traci
     import emissions
+    import reroutings
     import charging_metrics
     import traffic_metrics
 
@@ -696,4 +723,4 @@ if __name__ == "__main__":
         # Run SUMO simulation
         SUMO_BINARY = config["SUMO_BINARY"]
         CONFIG_FILE = WORKING_FOLDER + config["CONFIG_FILE"]      
-        run()  
+        run_debug2()  
