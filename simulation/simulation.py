@@ -502,29 +502,48 @@ def run():
     
     # Initialize the simulation information
     simulationData = emissions.get_initial_simulation_information()
+    reroutingData = reroutings.new_rerouting_data()
     vehicleEmissions = {}
     vehList = []
-    # EXECUTE the simulation BY steps
+
+    # Execute the simulation loop
     while traci.simulation.getMinExpectedNumber() > 0:
         traci.simulationStep()
+        sim_time = traci.simulation.getTime()
+
+        # --- Per-vehicle tick update (time-only logic) ---
+        for veh in traci.vehicle.getIDList():
+            has_stationfinder = traci.vehicle.getParameter(veh, "has.stationfinder.device")
+            has_battery = traci.vehicle.getParameter(veh, "has.battery.device")
+            print(f"Vehicle {veh} has_stationfinder: {has_stationfinder}, has_battery: {has_battery}")
+            if has_stationfinder == "true" and has_battery == "true":               
+                # Get the current s and b values
+                csId_stationfinder = traci.vehicle.getParameter(veh, "device.stationfinder.chargingStation")  # 's'
+                csId_battery = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")  # 'b'
+                reroutings.tick_update_vehicle(reroutingData,veh,csId_stationfinder,csId_battery,sim_time)
+
         # Vehicles which are starting to charge        
         for veh in traci.simulation.getStopStartingVehiclesIDList():
             csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
-            if (csId != "NULL"):
-                #print(veh)
-                vehList.append(veh)
-                traci.chargingstation.setParameter(csId, "desiredPower", 0)
-                traci.chargingstation.setParameter(csId, "aliquotPowerAdjustment", 1)
+            reroutings.handle_arrival(reroutingData,veh,csId,sim_time)            
+            vehList.append(veh)
+            traci.chargingstation.setParameter(csId, "desiredPower", 0)
+            traci.chargingstation.setParameter(csId, "aliquotPowerAdjustment", 1)
+
         # Vehicles which are ending to charge
         for veh in traci.simulation.getStopEndingVehiclesIDList():
             vehList.remove(veh)
+
         # Set power adjustments
         calculateAliquotPowerAdjustments(vehList)
         setChargingStationPowers(vehList)
         # Get vehicle emissions at this step
         vehicleEmissions[int(traci.simulation.getTime())] = emissions.get_instant_vehicle_emissions(simulationData)
+
     # Get the final simulation information
     emissions.get_final_simulation_information(simulationData, vehicleEmissions)
+    reroutingResult = reroutings.finalize_json(reroutingData)
+    reroutings.dump_json(reroutingResult, WORKING_FOLDER + "rerouting_metrics.json")
 
     traci.close()
 
@@ -723,4 +742,4 @@ if __name__ == "__main__":
         # Run SUMO simulation
         SUMO_BINARY = config["SUMO_BINARY"]
         CONFIG_FILE = WORKING_FOLDER + config["CONFIG_FILE"]      
-        run_debug2()  
+        run()  
