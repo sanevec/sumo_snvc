@@ -153,6 +153,21 @@ def add_charging_stations():
         add_charging_station(edge_id, cs, x1, y1, x2, y2)
     print('Charging stations added successfully')
 
+def replace_routes():
+    """Replace whole word occurrences of each edge ID in CS_LIST inside ROUTES_FILE 
+    with 'first_<id> second_<id>', even if surrounded by quotes or spaces.
+    """
+    with open(ROUTES_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    for cs in CS_LIST:
+        replacement = f"first_{cs} second_{cs}"
+        pattern = rf"(?<!\w){re.escape(cs)}(?!\w)"
+        content = re.sub(pattern, replacement, content)
+
+    with open(ROUTES_FILE, "w", encoding="utf-8") as f:
+        f.write(content)
+
 def obtain_edge_ids():
     '''
     Obtains all edge IDs from the edges file and returns them as a list.
@@ -515,7 +530,7 @@ def run():
         for veh in traci.vehicle.getIDList():
             has_stationfinder = traci.vehicle.getParameter(veh, "has.stationfinder.device")
             has_battery = traci.vehicle.getParameter(veh, "has.battery.device")
-            print(f"Vehicle {veh} has_stationfinder: {has_stationfinder}, has_battery: {has_battery}")
+            #print(f"Vehicle {veh} has_stationfinder: {has_stationfinder}, has_battery: {has_battery}")
             if has_stationfinder == "true" and has_battery == "true":               
                 # Get the current s and b values
                 csId_stationfinder = traci.vehicle.getParameter(veh, "device.stationfinder.chargingStation")  # 's'
@@ -682,9 +697,10 @@ if __name__ == "__main__":
             "  NODES_FILE       (str)          → .nod.xml file name used in each run\n"
             "  EDGES_FILE       (str)          → .edg.xml file name used in each run\n"
             "  ADDITIONAL_FILE  (str)          → .add.xml file name used in each run\n"
-            "  NETWORK_FILE     (str)          → .net.xml output file name\n"
-            "  CS_LIST          (list of int)  → list of edge indices for charging stations\n"
-            "  CS_SIZE          (int)          → number of charging lanes per station group\n"
+            "  NETWORK_FILE     (str)          → .net.xml file name used in each run\n"
+            "  ROUTES_FILE      (str)          → .rou.xml file name used in each run\n"
+            "  CS_LIST          (list of str)  → list of edges for charging stations\n"
+            "  CS_SIZE          (int)          → number of charging lanes per station group (= per edge)\n"
             "  CS_POWER         (list of int)  → charging point power and charging station power factor (size*power*factor)\n"
             "If any are lists, the script will perform a grid search over all combinations."
         )
@@ -703,6 +719,7 @@ if __name__ == "__main__":
         "EDGES_FILE",
         "ADDITIONAL_FILE",
         "NETWORK_FILE",
+        "ROUTES_FILE",
         "CS_LIST",
         "CS_SIZE",
         "CS_POWER"
@@ -735,9 +752,12 @@ if __name__ == "__main__":
         CS_POWER = config["CS_POWER"]
         add_charging_stations()
 
+        # Replace routes file
+        ROUTES_FILE = WORKING_FOLDER + config["ROUTES_FILE"]
+        replace_routes()
+
         # Convert network files
         os.system(SUMO_HOME+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE) 
-
         
         # Run SUMO simulation
         SUMO_BINARY = config["SUMO_BINARY"]

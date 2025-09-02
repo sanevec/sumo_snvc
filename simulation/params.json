@@ -6,6 +6,7 @@
     "EDGES_FILE" :"network.edg.xml",
     "ADDITIONAL_FILE" :"infrastructure.add.xml",
     "NETWORK_FILE" :"network.net.xml",
+    "ROUTES_FILE" :"routes.rou.xml",
     "CS_LIST": [["e7"],["e8"],["e7", "e8"]],
     "CS_SIZE": [3, 5],
     "CS_POWER": [[150000, 0.3], [350000, 1]]  
