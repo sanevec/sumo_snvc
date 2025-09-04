@@ -1,2 +1,4 @@
 simulation/runs
 simulation/__pycache__
+simulation/genetic/runs
+simulation/genetic/__pycache__

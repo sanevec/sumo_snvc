@@ -46,7 +46,7 @@ def _parse_sumocfg(config_path):
 
     fcd_elem = out_elem.find("fcd-output")
     if fcd_elem is None or fcd_elem.get("value") is None:
-        raise RuntimeError("fcd-output is required to compute session waiting times but is missing in the .sumocfg <output> section.")
+        raise RuntimeError("fcd-output is required to compute session waiting times and queues but is missing in the .sumocfg <output> section.")
     fcd_xml_path = _resolve_path(config_path, fcd_elem.get("value"))
 
     return {
@@ -90,6 +90,7 @@ def _load_charging_events(charging_xml_path):
                 "total_charging_time": 0.0,
                 "number_of_sessions": 0,
                 "vehicles": [],
+                "queues": [],  # <- nuevo: lista de longitudes de cola por sesión
                 "utilization": 0.0,
                 "session_wait_times": [],
                 "avg_session_wait_time": 0.0,
@@ -105,18 +106,25 @@ def _load_charging_events(charging_xml_path):
     return events, station_metrics, vehicles_of_interest
 
 
-# ---------- FCD (per-session waiting time from queue entry) ----------
+# ---------- FCD parsing ----------
 
-def _build_fcd_series(fcd_xml_path, vehicles_filter=None):
+def _build_fcd_series_and_lane_zero_counts(fcd_xml_path, vehicles_filter=None):
     """
-    Build per-vehicle time series from FCD: veh_id -> list of (time, lane).
+    Build:
+      - per-vehicle time series: veh_id -> list[(time, lane)]
+      - lane->time->count_zero_speed: dict of per-time counts of vehicles with speed==0
     Uses iterparse to be memory-friendly.
+    Only vehicles in vehicles_filter are considered for per-vehicle series,
+    but for queue counts we also restrict to vehicles_filter to stay consistent
+    with the population that actually usa CS (y reducir memoria).
     """
     series = {}
+    lane_zero_counts = {}  # lane -> {time -> count_of_veh_speed0}
+
     context = ET.iterparse(fcd_xml_path, events=("start", "end"))
     _, root = next(context)
-
     current_time = None
+
     for event, elem in context:
         tag = elem.tag
 
@@ -125,23 +133,36 @@ def _build_fcd_series(fcd_xml_path, vehicles_filter=None):
 
         elif event == "end" and tag == "vehicle":
             vid = elem.get("id")
-            if vehicles_filter and vid not in vehicles_filter:
-                elem.clear()
-                continue
             lane = elem.get("lane")
-            if vid and lane is not None and current_time is not None:
-                if vid not in series:
-                    series[vid] = []
-                series[vid].append((current_time, lane))
+            # speed might be absent for stopped or 0; SUMO writes "speed"
+            speed_str = elem.get("speed")
+            try:
+                speed = float(speed_str) if speed_str is not None else 0.0
+            except ValueError:
+                speed = 0.0
+
+            if vehicles_filter is None or vid in vehicles_filter:
+                # Save series for waits
+                if vid and lane is not None and current_time is not None:
+                    series.setdefault(vid, []).append((current_time, lane))
+                # Count queue zeros (restrict to vehicles_filter for coherency)
+                if lane is not None and current_time is not None and speed == 0.0:
+                    lane_zero_counts.setdefault(lane, {})
+                    lane_zero_counts[lane][current_time] = lane_zero_counts[lane].get(current_time, 0) + 1
+
             elem.clear()
 
         elif event == "end" and tag == "timestep":
             root.clear()
 
+    # sort per-vehicle series by time
     for vid in series:
         series[vid].sort(key=lambda x: x[0])
-    return series
 
+    return series, lane_zero_counts
+
+
+# ---------- Waits (from queue entry) ----------
 
 def _find_queue_entry_time(samples, in_zone, t_end):
     """Find first time vehicle is in queue zone before t_end."""
@@ -175,34 +196,50 @@ def _find_queue_entry_time(samples, in_zone, t_end):
         return None
 
 
-def _compute_session_waits(events, fcd_xml_path, effective_cs_count_by_edge):
+def _compute_session_waits_and_queues(events, fcd_xml_path, effective_cs_count_by_edge):
     """
-    Compute waiting times from queue entry to charging begin.
-    Queue zone = to_cs_<edge>_0 plus cs_lanes_<edge>_<k> for k in [0..n_cs-1].
+    Compute:
+      - per-station waits: from queue entry (to_cs_<edge>_0 or cs_lanes_<edge>_k) to charging begin
+      - per-station queues: for each session, the MAX number of vehicles with speed==0
+        in the *station lane* (cs_lanes_<edge>_<i>) during [chargingBegin, chargingEnd].
     """
     vehicles = set(ev[1] for ev in events)
-    series = _build_fcd_series(fcd_xml_path, vehicles_filter=vehicles)
+    series, lane_zero_counts = _build_fcd_series_and_lane_zero_counts(fcd_xml_path, vehicles_filter=vehicles)
     per_station_waits = {}
+    per_station_queues = {}
 
-    for station_id, veh, t_begin, _, _ in events:
-        edge_id, _ = _extract_edge_and_index(station_id)
-        n_cs = effective_cs_count_by_edge.get(edge_id, 1)
-        queue_lanes = {f"to_cs_{edge_id}_0"} | {f"cs_lanes_{edge_id}_{k}" for k in range(max(1, n_cs))}
+    for station_id, veh, t_begin, t_end, _ in events:
+        edge_id, idx = _extract_edge_and_index(station_id)
+        n_cs = max(1, effective_cs_count_by_edge.get(edge_id, 1))
 
-        def in_zone(lane_name):
-            return lane_name in queue_lanes
+        # Queue zone for waits
+        queue_lanes = {f"to_cs_{edge_id}_0"} | {f"cs_lanes_{edge_id}_{k}" for k in range(n_cs)}
+        in_zone = lambda lane_name: lane_name in queue_lanes
 
+        # Compute wait
         samples = series.get(veh, [])
         t_enter = _find_queue_entry_time(samples, in_zone, t_begin)
-        if t_enter is None:
-            continue
+        if t_enter is not None:
+            wait = max(0.0, t_begin - t_enter)
+            per_station_waits.setdefault(station_id, []).append(wait)
 
-        wait = max(0.0, t_begin - t_enter)
-        if station_id not in per_station_waits:
-            per_station_waits[station_id] = []
-        per_station_waits[station_id].append(wait)
+        # Compute queue length (station lane only)
+        station_lane = f"cs_lanes_{edge_id}_{idx}"
+        lane_counts = lane_zero_counts.get(station_lane, {})
+        if lane_counts:
+            # We have discrete times; take max on [t_begin, t_end]
+            qmax = 0
+            # Iterate only keys within interval for efficiency
+            # (simple scan; keys count per lane is typically small)
+            for tt, cnt in lane_counts.items():
+                if t_begin <= tt <= t_end:
+                    if cnt > qmax:
+                        qmax = cnt
+            per_station_queues.setdefault(station_id, []).append(qmax)
+        else:
+            per_station_queues.setdefault(station_id, []).append(0)
 
-    return per_station_waits
+    return per_station_waits, per_station_queues
 
 
 # ---------- Stats ----------
@@ -234,6 +271,10 @@ def _compute_group_and_totals(station_metrics, sim_duration, effective_cs_count_
       - per_group.number_of_stations_used
       - per_group.number_of_stations_total (if cs_size is provided)
       - per_group.stations_used_ratio (if total known)
+      - per_group.total_energy_charged, total_charging_time, total_number_of_sessions
+      - per_group.avg_queue_length, p95_queue_length
+    Uses:
+      - p95_session_wait_time field name (no 'avg_' prefix) for group and totals.
     """
     # per-station derived metrics
     for s in station_metrics.values():
@@ -246,34 +287,47 @@ def _compute_group_and_totals(station_metrics, sim_duration, effective_cs_count_
     group_acc = {}
     for station_id, s in station_metrics.items():
         edge_id, _ = _extract_edge_and_index(station_id)
-        if edge_id not in group_acc:
-            group_acc[edge_id] = {
-                "energy": [], "time": [], "sessions": [], "utilization": [],
-                "avg_session_wait_time": [], "p95_session_wait_time": []
-            }
-        g = group_acc[edge_id]
+        g = group_acc.setdefault(edge_id, {
+            "energy": [], "time": [], "sessions": [], "utilization": [],
+            "waits_avg": [], "waits_p95": [], "queues_all": []
+        })
         g["energy"].append(s["total_energy_charged"])
         g["time"].append(s["total_charging_time"])
         g["sessions"].append(s["number_of_sessions"])
         g["utilization"].append(s["utilization"])
-        g["avg_session_wait_time"].append(s["avg_session_wait_time"])
-        g["p95_session_wait_time"].append(s["p95_session_wait_time"])
+        g["waits_avg"].append(s["avg_session_wait_time"])
+        g["waits_p95"].append(s["p95_session_wait_time"])
+        # Extiende con todas las colas registradas en la estación
+        g["queues_all"].extend(s.get("queues", []))
 
-    # build per_group with corrected station counts
+    # build per_group with corrected station counts + queue stats
     per_group = {}
     for edge_id, acc in group_acc.items():
         used = len(acc["energy"])  # stations that actually appear in events
         n = used if used > 0 else 1
+
+        # Queue stats (sobre TODAS las sesiones del grupo)
+        queues_all = acc["queues_all"]
+        avg_q = (sum(queues_all) / len(queues_all)) if queues_all else 0.0
+        p95_q = _percentile_nearest_rank(queues_all, 95) if queues_all else 0.0
+
         group_entry = {
+            # Totales solicitados
+            "total_energy_charged": sum(acc["energy"]),
             "avg_energy_charged": sum(acc["energy"]) / n,
+            "total_charging_time": sum(acc["time"]),
             "avg_charging_time": sum(acc["time"]) / n,
-            "avg_number_of_sessions": sum(acc["sessions"]) / n,
+            "total_number_of_sessions": sum(acc["sessions"]),
+            "avg_queue_length": avg_q,
+            "p95_queue_length": p95_q,
+
+            # Métricas previas
             "avg_utilization": sum(acc["utilization"]) / n,
-            "avg_session_wait_time": sum(acc["avg_session_wait_time"]) / n,
-            "avg_p95_session_wait_time": sum(acc["p95_session_wait_time"]) / n,
+            "avg_session_wait_time": sum(acc["waits_avg"]) / n,
+            "p95_session_wait_time": sum(acc["waits_p95"]) / n,  # media de p95 por estación
             "number_of_stations_used": used
         }
-        # If a global cs_size is given, use it for all groups
+
         if cs_size is not None:
             total = int(cs_size)
             group_entry["number_of_stations_total"] = total
@@ -281,19 +335,30 @@ def _compute_group_and_totals(station_metrics, sim_duration, effective_cs_count_
 
         per_group[edge_id] = group_entry
 
-    # totals (averages across stations used)
+    # totals (averages across stations used) + requested totals/queues
     num_stations_used = len(station_metrics)
+    all_queues = []
+    for s in station_metrics.values():
+        all_queues.extend(s.get("queues", []))
+
     totals = {
+        # Totales solicitados
+        "total_energy_charged": sum(s["total_energy_charged"] for s in station_metrics.values()),
         "avg_energy_charged": (sum(s["total_energy_charged"] for s in station_metrics.values()) / num_stations_used) if num_stations_used else 0.0,
+        "total_charging_time": sum(s["total_charging_time"] for s in station_metrics.values()),
         "avg_charging_time": (sum(s["total_charging_time"] for s in station_metrics.values()) / num_stations_used) if num_stations_used else 0.0,
-        "avg_number_of_sessions": (sum(s["number_of_sessions"] for s in station_metrics.values()) / num_stations_used) if num_stations_used else 0.0,
+        "total_number_of_sessions": sum(s["number_of_sessions"] for s in station_metrics.values()),
+        "avg_queue_length": (sum(all_queues) / len(all_queues)) if all_queues else 0.0,
+        "p95_queue_length": _percentile_nearest_rank(all_queues, 95) if all_queues else 0.0,
+
+        # Métricas previas
         "avg_utilization": (sum(s["utilization"] for s in station_metrics.values()) / num_stations_used) if num_stations_used else 0.0,
         "avg_session_wait_time": (sum(s["avg_session_wait_time"] for s in station_metrics.values()) / num_stations_used) if num_stations_used else 0.0,
-        "avg_p95_session_wait_time": (sum(s["p95_session_wait_time"] for s in station_metrics.values()) / num_stations_used) if num_stations_used else 0.0,
+        "p95_session_wait_time": (sum(s["p95_session_wait_time"] for s in station_metrics.values()) / num_stations_used) if num_stations_used else 0.0,
         "number_of_stations_used": num_stations_used,
         "simulation_duration": sim_duration
     }
-    # If cs_size is known, estimate total planned stations globally
+
     if cs_size is not None:
         num_groups = len(group_acc)  # distinct edge_ids that appeared
         total_planned = int(cs_size) * num_groups
@@ -323,17 +388,26 @@ def extract_charging_metrics_from_sumocfg(config_path, output_json_path, cs_size
     """
     Compute charging metrics and write JSON.
 
+    Output JSON shape matches the requested schema:
+      per_station:
+        - vehicles (list)
+        - queues (list)  # max queue length (stopped speed==0) at station lane during each session
+      per_group:
+        - total_energy_charged, total_charging_time, total_number_of_sessions
+        - avg_queue_length, p95_queue_length
+        - p95_session_wait_time  (no 'avg_p95...')
+      totals:
+        - total_energy_charged, total_charging_time, total_number_of_sessions
+        - avg_queue_length, p95_queue_length
+        - p95_session_wait_time
+
     Args:
         config_path (str): Path to the SUMO .sumocfg file.
         output_json_path (str): Path to output JSON file.
-        cs_size (int|None): If provided, the intended number of stations (lanes) per group
-            is assumed to be the same for all groups. Used to:
-            - build queue zones for FCD waits (cs_lanes_<edge>_0..cs_lanes_<edge>_<cs_size-1>)
-            - report 'number_of_stations_total' and 'stations_used_ratio' in group and total summaries.
-            If omitted, counts are inferred from station IDs that appear in charging events.
+        cs_size (int|None): Intended number of stations (lanes) per group (optional).
     """
     cfg = _parse_sumocfg(config_path)
-    events, station_metrics, _ = _load_charging_events(cfg["charging_xml_path"])
+    events, station_metrics, vehicles = _load_charging_events(cfg["charging_xml_path"])
 
     # Infer stations-per-group from events
     inferred_counts = {}
@@ -341,15 +415,22 @@ def extract_charging_metrics_from_sumocfg(config_path, output_json_path, cs_size
         edge_id, _ = _extract_edge_and_index(sid)
         inferred_counts[edge_id] = inferred_counts.get(edge_id, 0) + 1
 
-    # Build effective counts per edge: use cs_size for all if provided; else inferred
+    # Build effective counts per edge
     effective_cs_count_by_edge = {}
     for edge_id in inferred_counts.keys():
         effective_cs_count_by_edge[edge_id] = int(cs_size) if cs_size is not None else inferred_counts[edge_id]
 
-    # Session waiting times from FCD (queue entry -> charging begin)
-    per_station_waits = _compute_session_waits(events, cfg["fcd_xml_path"], effective_cs_count_by_edge)
-    for station_id, waits in per_station_waits.items():
-        station_metrics[station_id]["session_wait_times"] = waits
+    # Waits (queue entry -> charging begin) and Queues (per session)
+    per_station_waits, per_station_queues = _compute_session_waits_and_queues(
+        events, cfg["fcd_xml_path"], effective_cs_count_by_edge
+    )
+
+    # Attach waits & queues to station metrics
+    for station_id in station_metrics.keys():
+        if station_id in per_station_waits:
+            station_metrics[station_id]["session_wait_times"] = per_station_waits[station_id]
+        # queues might be missing if never observed; ensure present
+        station_metrics[station_id]["queues"] = per_station_queues.get(station_id, station_metrics[station_id].get("queues", []))
 
     # Aggregations
     per_group, totals = _compute_group_and_totals(

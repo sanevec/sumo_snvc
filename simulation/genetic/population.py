@@ -2,6 +2,7 @@ import random
 from multiprocessing import Pool
 import os
 from individual import Individual
+from config import GA_PARAMS
 
 class Population:
     def __init__(self, params):
@@ -9,7 +10,7 @@ class Population:
         self.individuals = []
 
     def initialize(self):
-        self.individuals = [Individual(length=self.params["chromosome_length"]) for _ in range(self.params["population_size"])]
+        self.individuals = [Individual(length=self.params["chromosome_length"],n_edges=len(GA_PARAMS["cs_list"])) for _ in range(self.params["population_size"])]
 
     def evaluate(self):
         for ind in self.individuals:
@@ -32,7 +33,7 @@ class Population:
 
         # Finally, we add the same number of new individuals as the elitism size
         while len(new_individuals) < self.params["population_size"]:
-            new_individuals.append(Individual(length=self.params["chromosome_length"]))
+            new_individuals.append(Individual(length=self.params["chromosome_length"],n_edges=len(GA_PARAMS["cs_list"])))
 
         self.individuals = new_individuals
             
