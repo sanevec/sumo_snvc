@@ -28,7 +28,7 @@ class Population:
             parents = self.tournament_selection(self.individuals)
             new_individual = self.crossover(parents[0], parents[1])
             if random.random() < self.params["mutation_prob"]:
-                new_individual.mutate()
+                new_individual.mutate(n_edges=len(GA_PARAMS["cs_list"]))
             new_individuals.append(new_individual)
 
         # Finally, we add the same number of new individuals as the elitism size

@@ -11,9 +11,10 @@ class Individual:
         # STATS TO GET FROM SIMULATION
         self.fitness = sum(self.genome)  # Placeholder for actual fitness calculation
         # In a real scenario, you would call the simulation here
+        print("Evaluating individual with genome:", self.genome)
         cs_list = [GA_PARAMS["cs_list"][i] for i in self.genome]
         print("Evaluating individual with CSs:", cs_list)
-        os.system("python3 ../simulation.py --config genetic_test.json")
+        os.system("python3 ../simulation.py --config " + GA_PARAMS["config_file"])
         
     def mutate(self, n_edges=50):
         while True:
