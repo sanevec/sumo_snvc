@@ -9,6 +9,25 @@
 
 import sys
 import os
+# Read the SUMO_HOME environment variable
+SUMO_HOME = os.environ.get("SUMO_HOME")
+
+if SUMO_HOME is None:
+    raise EnvironmentError("The SUMO_HOME environment variable is not defined.")
+
+# Build the path to the tools/ folder inside SUMO_HOME
+tools_path = os.path.join(SUMO_HOME, "tools")
+
+# Add it to sys.path if not already present
+if tools_path not in sys.path:
+    sys.path.append(tools_path)
+
+import traci
+import emissions
+import reroutings
+import charging_metrics
+import traffic_metrics
+
 import math
 from datetime import datetime
 import re
@@ -149,8 +168,10 @@ def add_charging_stations():
         if shape_points:
             x1, y1 = first_half[0]
             x2, y2 = second_half[-1]
-        x1, y1, x2, y2 = generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xm, ym)
-        add_charging_station(edge_id, cs, x1, y1, x2, y2)
+        length = 65
+        offset = 55
+        x1, y1, x2, y2 = generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xm, ym, length, offset)
+        add_charging_station(edge_id, cs, x1, y1, x2, y2, length)
     print('Charging stations added successfully')
 
 def replace_routes():
@@ -288,7 +309,7 @@ def get_edge_block(edge_id):
     else:
         return None
 
-def add_charging_station(edge_id, cs_group, x1, y1, x2, y2):
+def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, lane_length):
     '''
     Adds a charging station to the network by creating the necessary nodes and edges.
     The charging station consists of a start node, an end node, and a lane with multiple
@@ -312,7 +333,7 @@ def add_charging_station(edge_id, cs_group, x1, y1, x2, y2):
     </edge>     
     """
     charging_points = "".join(
-        f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}" startPos="30.0" endPos="35.0" friendlyPos="true" power="{CS_POWER[0]}">'
+        f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}" startPos="{lane_length-15}" endPos="{lane_length-10}" friendlyPos="true" power="{CS_POWER[0]}">'
         f'\n    <param key="group" value="{cs_group}"/>'
         f'\n    <param key="chargingPort" value="CCS2"/>'
         f'\n    <param key="allowedPowerOutput" value="{CS_POWER[0]}"/>'
@@ -511,7 +532,7 @@ def generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xp, yp, length=6
 
 ############################################
 
-def run():
+def run_simulation():
     # Start the SUMO simulation
     traci.start([SUMO_HOME+SUMO_BINARY, "-c", CONFIG_FILE])
     
@@ -660,27 +681,41 @@ def run_debug2():
 
     traci.close()
 
+def run(config):
+    # Set up paths and files based on the configuration
+    global FOLDER, WORKING_FOLDER, NODES_FILE, EDGES_FILE, ADDITIONAL_FILE
+    global NETWORK_FILE, CS_LIST, CS_SIZE, CS_POWER, ROUTES_FILE
+    global SUMO_BINARY, CONFIG_FILE
+
+    FOLDER = config["FOLDER"]
+    file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
+    WORKING_FOLDER = folder_setup(config, file_list)        
+    NODES_FILE = WORKING_FOLDER + config["NODES_FILE"]
+    EDGES_FILE = WORKING_FOLDER + config["EDGES_FILE"]
+    ADDITIONAL_FILE = WORKING_FOLDER + config["ADDITIONAL_FILE"]
+    NETWORK_FILE = WORKING_FOLDER + config["NETWORK_FILE"]
+
+    # Add charging stations
+    CS_LIST = config["CS_LIST"]
+    CS_SIZE = config["CS_SIZE"]
+    CS_POWER = config["CS_POWER"]
+    add_charging_stations()
+
+    # Replace routes file
+    ROUTES_FILE = WORKING_FOLDER + config["ROUTES_FILE"]
+    replace_routes()
+
+    # Convert network files
+    os.system(SUMO_HOME+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE) 
+    
+    # Run SUMO simulation
+    SUMO_BINARY = config["SUMO_BINARY"]
+    CONFIG_FILE = WORKING_FOLDER + config["CONFIG_FILE"]      
+    run_simulation()
+    return WORKING_FOLDER  
+
 if __name__ == "__main__":
-
-    # Read the SUMO_HOME environment variable
-    SUMO_HOME = os.environ.get("SUMO_HOME")
-
-    if SUMO_HOME is None:
-        raise EnvironmentError("The SUMO_HOME environment variable is not defined.")
-
-    # Build the path to the tools/ folder inside SUMO_HOME
-    tools_path = os.path.join(SUMO_HOME, "tools")
-
-    # Add it to sys.path if not already present
-    if tools_path not in sys.path:
-        sys.path.append(tools_path)
-
-    import traci
-    import emissions
-    import reroutings
-    import charging_metrics
-    import traffic_metrics
-
+  
     parser = argparse.ArgumentParser(
         description="Run SUMO with configuration file containing global parameters.",
         formatter_class=argparse.RawTextHelpFormatter
@@ -737,29 +772,4 @@ if __name__ == "__main__":
         for k, v in config.items():
             print(f"{k}: {v} ({type(v).__name__})")
 
-        # Set up paths and files based on the configuration
-        FOLDER = config["FOLDER"]
-        file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
-        WORKING_FOLDER = folder_setup(config, file_list)        
-        NODES_FILE = WORKING_FOLDER + config["NODES_FILE"]
-        EDGES_FILE = WORKING_FOLDER + config["EDGES_FILE"]
-        ADDITIONAL_FILE = WORKING_FOLDER + config["ADDITIONAL_FILE"]
-        NETWORK_FILE = WORKING_FOLDER + config["NETWORK_FILE"]
-
-        # Add charging stations
-        CS_LIST = config["CS_LIST"]
-        CS_SIZE = config["CS_SIZE"]
-        CS_POWER = config["CS_POWER"]
-        add_charging_stations()
-
-        # Replace routes file
-        ROUTES_FILE = WORKING_FOLDER + config["ROUTES_FILE"]
-        replace_routes()
-
-        # Convert network files
-        os.system(SUMO_HOME+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE) 
-        
-        # Run SUMO simulation
-        SUMO_BINARY = config["SUMO_BINARY"]
-        CONFIG_FILE = WORKING_FOLDER + config["CONFIG_FILE"]      
-        run()  
+        run(config) 
