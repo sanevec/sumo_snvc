@@ -23,7 +23,18 @@ class Individual:
         with open(GA_PARAMS["config_file"], "r", encoding="utf-8") as f:
             config = json.load(f)
         
-        simulation.run(config)
+        results_folder = simulation.run(config)
+        print(f"Simulation completed. Results in folder: {results_folder}")
+        
+        with open(results_folder+'charging_metrics.json', "r", encoding="utf-8") as f:
+            charging_metrics = json.load(f)
+        print("Charging metrics:", charging_metrics)
+        with open(results_folder+'rerouting_metrics.json', "r", encoding="utf-8") as f:
+            rerouting_metrics = json.load(f)
+        print("Rerouting metrics:", rerouting_metrics)
+        with open(results_folder+'traffic_metrics.json', "r", encoding="utf-8") as f:
+            traffic_metrics = json.load(f)
+        print("Traffic metrics:", traffic_metrics)
         #os.system("python3 ../simulation.py --config " + GA_PARAMS["config_file"])
         
     def mutate(self, n_edges=50):

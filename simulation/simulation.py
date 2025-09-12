@@ -587,6 +587,24 @@ def run_simulation():
     charging_metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json", CS_SIZE)
     traffic_metrics.extract_traffic_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "traffic_metrics.json")
 
+def remove_files(WORKING_FOLDER, files_to_remove):
+    """
+    Delete a list of files inside a given folder.
+
+    Parameters:
+        WORKING_FOLDER (str): Path to the folder (must end with '/')
+        files_to_remove (list): List of filenames to delete
+    """
+    for filename in files_to_remove:
+        filepath = WORKING_FOLDER + filename
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                print(f"Deleted: {filepath}")
+            else:
+                print(f"File not found: {filepath}")
+        except Exception as e:
+            print(f"Error deleting {filepath}: {e}")
 
 def calculateAliquotPowerAdjustments(vehList):
     csDict = {}
