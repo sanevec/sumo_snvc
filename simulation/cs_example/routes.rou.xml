@@ -98,7 +98,7 @@
     
     <!-- Definición del tipo de vehículo -->
 
-    <vType  id="EV_car" minGap="2.5" maxSpeed="41.66" emissionClass="Energy/unknown" color="green" accel="1" decel="1" sigma="0">
+    <vType  id="EV" minGap="2.5" maxSpeed="41.66" emissionClass="Energy/unknown" color="green" accel="1" decel="1" sigma="0">
         <param key="has.battery.device" value="true"/>
         <param key="device.battery.capacity" value="64000"/>
         <param key="device.battery.stoppingTreshold" value="0.1"/>
@@ -108,7 +108,7 @@
         <param key="has.stationfinder.device" value="true"/>
         <param key="device.stationfinder.checkEnergyForRoute" value="false"/>
         <param key="device.stationfinder.replacePlannedStop" value="0"/>
-        <param key="device.stationfinder.waitForCharge" value="10"/> <!-- reroute if cs is being used, experimental value of 10 works fine -->
+        <param key="device.stationfinder.waitForCharge" value="100"/> <!-- reroute if cs is being used, experimental value of 10 works fine -->
         <param key="device.stationfinder.repeat" value="10"/> 
         <param key="device.stationfinder.charging.waitingTime.weight" value="5"/> <!-- >1 so waiting is penalized and the vehicle reroutes -->
         <param key="device.stationfinder.radius" value="300000"/>  <!-- needed to increase search radius in seconds -->
@@ -132,7 +132,7 @@
     <!-- <route id="r1" edges="e1 e4 first_e5 second_e5 e6 e2 e3"/> -->
 
     <!-- Definición del vehículo -->
-    <vehicle id="veh1" type="EV_car" route="r0" depart="0">
+    <vehicle id="veh1" type="EV" route="r0" depart="0">
         <param key="device.battery.chargeLevel" value="25000"/>        
     </vehicle>
     
@@ -140,15 +140,15 @@
     <vehicle id="veh6" route="r2" depart="0"/>
     <vehicle id="veh7" route="r3" depart="0"/>
 
-    <vehicle id="veh2" type="EV_car" route="r0" depart="20">
+    <vehicle id="veh2" type="EV" route="r0" depart="20">
         <param key="device.battery.chargeLevel" value="25000"/>
     </vehicle>
     
-    <vehicle id="veh3" type="EV_car" route="r0" depart="30">
+    <vehicle id="veh3" type="EV" route="r0" depart="30">
         <param key="device.battery.chargeLevel" value="25000"/>
     </vehicle>
 
-    <vehicle id="veh4" type="EV_car" route="r0" depart="30">
+    <vehicle id="veh4" type="EV" route="r0" depart="30">
         <param key="device.battery.chargeLevel" value="25000"/>
     </vehicle>
 

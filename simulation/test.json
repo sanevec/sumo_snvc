@@ -7,7 +7,7 @@
     "ADDITIONAL_FILE" :"infrastructure.add.xml",
     "NETWORK_FILE" :"network.net.xml",
     "ROUTES_FILE" :"routes.rou.xml",
-    "CS_LIST": [["e5", "e8"]],
-    "CS_SIZE": [3],
+    "CS_LIST": [["e5", "e9"]],
+    "CS_SIZE": [1],
     "CS_POWER": [[150000, 0.3]]     
 }

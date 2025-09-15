@@ -547,8 +547,24 @@ def run_simulation():
         traci.simulationStep()
         sim_time = traci.simulation.getTime()
 
+        # Disable teleporting for EVs
+        for veh in traci.simulation.getStartingTeleportIDList():
+            vtype = traci.vehicle.getTypeID(veh)
+            if vtype == "EV":
+                print(f"Disabling teleport for vehicle {veh} of type {vtype} at time {sim_time}")
+                
+
         # --- Per-vehicle tick update (time-only logic) ---
         for veh in traci.vehicle.getIDList():
+            wt=traci.vehicle.getWaitingTime(veh)
+            if wt == 49:
+                print(f"Vehicle {veh} has waiting time {wt} at time {sim_time}")
+                x,y = traci.vehicle.getPosition(veh)
+                angle = traci.vehicle.getAngle(veh)
+                xb, yb = step_back(x,y,angle)
+                # Move the vehicle slightly to reset waiting time
+                print(f"Moving vehicle {veh} slightly to reset waiting time with angle {angle}")
+                traci.vehicle.moveToXY(veh, "", 0, xb, yb, angle=angle, keepRoute=1)
             has_stationfinder = traci.vehicle.getParameter(veh, "has.stationfinder.device")
             has_battery = traci.vehicle.getParameter(veh, "has.battery.device")
             #print(f"Vehicle {veh} has_stationfinder: {has_stationfinder}, has_battery: {has_battery}")
@@ -586,6 +602,19 @@ def run_simulation():
     emissions.save_output_data(simulationData, vehicleEmissions, WORKING_FOLDER)
     charging_metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json", CS_SIZE)
     traffic_metrics.extract_traffic_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "traffic_metrics.json")
+
+def step_back(x: float, y: float, angle_deg: float):
+    """
+    Returns the point located 1 unit backwards from (x, y),
+    using the convention: +x = right, +y = up;
+    0° = facing up, 90° = facing right, 180° = facing down, 270° = facing left.
+    Angles increase clockwise.
+    """
+    a = math.radians(angle_deg % 360)
+    nx = x - math.sin(a)
+    ny = y - math.cos(a)
+    return nx, ny
+
 
 def remove_files(WORKING_FOLDER, files_to_remove):
     """
