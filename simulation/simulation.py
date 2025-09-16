@@ -545,46 +545,46 @@ def run_simulation():
     # Execute the simulation loop
     while traci.simulation.getMinExpectedNumber() > 0:
         traci.simulationStep()
-        sim_time = traci.simulation.getTime()
-
-        # Disable teleporting for EVs
-        for veh in traci.simulation.getStartingTeleportIDList():
-            vtype = traci.vehicle.getTypeID(veh)
-            if vtype == "EV":
-                print(f"Disabling teleport for vehicle {veh} of type {vtype} at time {sim_time}")
-                
+        sim_time = traci.simulation.getTime()          
 
         # --- Per-vehicle tick update (time-only logic) ---
         for veh in traci.vehicle.getIDList():
-            wt=traci.vehicle.getWaitingTime(veh)
-            if wt == 49:
-                print(f"Vehicle {veh} has waiting time {wt} at time {sim_time}")
-                x,y = traci.vehicle.getPosition(veh)
-                angle = traci.vehicle.getAngle(veh)
-                xb, yb = step_back(x,y,angle)
-                # Move the vehicle slightly to reset waiting time
-                print(f"Moving vehicle {veh} slightly to reset waiting time with angle {angle}")
-                traci.vehicle.moveToXY(veh, "", 0, xb, yb, angle=angle, keepRoute=1)
-            has_stationfinder = traci.vehicle.getParameter(veh, "has.stationfinder.device")
-            has_battery = traci.vehicle.getParameter(veh, "has.battery.device")
-            #print(f"Vehicle {veh} has_stationfinder: {has_stationfinder}, has_battery: {has_battery}")
-            if has_stationfinder == "true" and has_battery == "true":               
-                # Get the current s and b values
-                csId_stationfinder = traci.vehicle.getParameter(veh, "device.stationfinder.chargingStation")  # 's'
-                csId_battery = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")  # 'b'
-                reroutings.tick_update_vehicle(reroutingData,veh,csId_stationfinder,csId_battery,sim_time)
+            vtype = traci.vehicle.getTypeID(veh)
+            if vtype == "EV":
+                wt=traci.vehicle.getWaitingTime(veh)
+                if wt == 49:
+                    print(f"Vehicle {veh} has waiting time {wt} at time {sim_time}")
+                    x,y = traci.vehicle.getPosition(veh)
+                    angle = traci.vehicle.getAngle(veh)
+                    xb, yb = step_back(x,y,angle)
+                    # Move the vehicle slightly to reset waiting time
+                    print(f"Moving vehicle {veh} slightly to reset waiting time with angle {angle}")
+                    traci.vehicle.moveToXY(veh, "", 0, xb, yb, angle=angle, keepRoute=1)
+
+                has_stationfinder = traci.vehicle.getParameter(veh, "has.stationfinder.device")
+                has_battery = traci.vehicle.getParameter(veh, "has.battery.device")
+                #print(f"Vehicle {veh} has_stationfinder: {has_stationfinder}, has_battery: {has_battery}")
+                if has_stationfinder == "true" and has_battery == "true":               
+                    # Get the current s and b values
+                    csId_stationfinder = traci.vehicle.getParameter(veh, "device.stationfinder.chargingStation")  # 's'
+                    csId_battery = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")  # 'b'
+                    reroutings.tick_update_vehicle(reroutingData,veh,csId_stationfinder,csId_battery,sim_time)
 
         # Vehicles which are starting to charge        
         for veh in traci.simulation.getStopStartingVehiclesIDList():
-            csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
-            reroutings.handle_arrival(reroutingData,veh,csId,sim_time)            
-            vehList.append(veh)
-            traci.chargingstation.setParameter(csId, "desiredPower", 0)
-            traci.chargingstation.setParameter(csId, "aliquotPowerAdjustment", 1)
+            vtype = traci.vehicle.getTypeID(veh)
+            if vtype == "EV":
+                csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
+                reroutings.handle_arrival(reroutingData,veh,csId,sim_time)            
+                vehList.append(veh)
+                traci.chargingstation.setParameter(csId, "desiredPower", 0)
+                traci.chargingstation.setParameter(csId, "aliquotPowerAdjustment", 1)
 
         # Vehicles which are ending to charge
         for veh in traci.simulation.getStopEndingVehiclesIDList():
-            vehList.remove(veh)
+            vtype = traci.vehicle.getTypeID(veh)
+            if vtype == "EV":
+                vehList.remove(veh)
 
         # Set power adjustments
         calculateAliquotPowerAdjustments(vehList)
@@ -597,11 +597,20 @@ def run_simulation():
     reroutingResult = reroutings.finalize_json(reroutingData)
     reroutings.dump_json(reroutingResult, WORKING_FOLDER + "rerouting_metrics.json")
 
+    # Close the simulation
     traci.close()
 
+    # Extract metrics and save output data
     emissions.save_output_data(simulationData, vehicleEmissions, WORKING_FOLDER)
     charging_metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json", CS_SIZE)
     traffic_metrics.extract_traffic_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "traffic_metrics.json")
+
+    # Clean up temporary files
+    remove_files('', [NETWORK_FILE, EDGES_FILE, NODES_FILE, ADDITIONAL_FILE, ROUTES_FILE, CONFIG_FILE])
+    ouput_files = [WORKING_FOLDER+f for f in os.listdir(WORKING_FOLDER) if f.startswith('output')]
+    remove_files('', ouput_files)
+
+    # Print summary or calculate combined metric for genetic algorithm optimization
 
 def step_back(x: float, y: float, angle_deg: float):
     """

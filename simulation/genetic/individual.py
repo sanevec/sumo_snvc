@@ -13,29 +13,31 @@ class Individual:
         self.fitness = fitness or None
 
     def evaluate(self):
-        # STATS TO GET FROM SIMULATION
-        self.fitness = sum(self.genome)  # Placeholder for actual fitness calculation
-        # In a real scenario, you would call the simulation here
         print("Evaluating individual with genome:", self.genome)
         cs_list = [GA_PARAMS["cs_list"][i] for i in self.genome]
         print("Evaluating individual with CSs:", cs_list)
-
+        
         with open(GA_PARAMS["config_file"], "r", encoding="utf-8") as f:
             config = json.load(f)
         
-        results_folder = simulation.run(config)
+        #config['CS_LIST'] = cs_list
+        print("Running simulation with config:", config)
+        results_folder = simulation.run(config)        
         print(f"Simulation completed. Results in folder: {results_folder}")
         
         with open(results_folder+'charging_metrics.json', "r", encoding="utf-8") as f:
             charging_metrics = json.load(f)
-        print("Charging metrics:", charging_metrics)
+        #print("Charging metrics:", charging_metrics)
         with open(results_folder+'rerouting_metrics.json', "r", encoding="utf-8") as f:
             rerouting_metrics = json.load(f)
-        print("Rerouting metrics:", rerouting_metrics)
+        #print("Rerouting metrics:", rerouting_metrics)
         with open(results_folder+'traffic_metrics.json', "r", encoding="utf-8") as f:
             traffic_metrics = json.load(f)
-        print("Traffic metrics:", traffic_metrics)
-        #os.system("python3 ../simulation.py --config " + GA_PARAMS["config_file"])
+        #print("Traffic metrics:", traffic_metrics)
+        
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.fitness = sum(self.genome)  # Placeholder for actual fitness calculation!!
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
     def mutate(self, n_edges=50):
         while True:

@@ -129,6 +129,7 @@
     <route id="r1" edges="e1 e4 e5"/>
     <route id="r2" edges="e8 e9 e6"/>
     <route id="r3" edges="e4 e5 e6"/>
+    <route id="r4" edges="e4 e5 e6"/>
     <!-- <route id="r1" edges="e1 e4 first_e5 second_e5 e6 e2 e3"/> -->
 
     <!-- Definición del vehículo -->
@@ -137,6 +138,11 @@
     </vehicle>
     
     <vehicle id="veh5" route="r1" depart="0"/>
+    <vehicle id="vehstop" depart="0">
+        <route edges="e3"/>
+        <stop lane="e3_0" pos="50" duration="1300"/>
+    </vehicle>
+    <vehicle id="vehteleport" route="r0" depart="0"/>
     <vehicle id="veh6" route="r2" depart="0"/>
     <vehicle id="veh7" route="r3" depart="0"/>
 
