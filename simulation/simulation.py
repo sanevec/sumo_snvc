@@ -550,17 +550,7 @@ def run_simulation():
         # --- Per-vehicle tick update (time-only logic) ---
         for veh in traci.vehicle.getIDList():
             vtype = traci.vehicle.getTypeID(veh)
-            if vtype == "EV":
-                wt=traci.vehicle.getWaitingTime(veh)
-                if wt == 49:
-                    print(f"Vehicle {veh} has waiting time {wt} at time {sim_time}")
-                    x,y = traci.vehicle.getPosition(veh)
-                    angle = traci.vehicle.getAngle(veh)
-                    xb, yb = step_back(x,y,angle)
-                    # Move the vehicle slightly to reset waiting time
-                    print(f"Moving vehicle {veh} slightly to reset waiting time with angle {angle}")
-                    traci.vehicle.moveToXY(veh, "", 0, xb, yb, angle=angle, keepRoute=1)
-
+            if vtype == "EV":              
                 has_stationfinder = traci.vehicle.getParameter(veh, "has.stationfinder.device")
                 has_battery = traci.vehicle.getParameter(veh, "has.battery.device")
                 #print(f"Vehicle {veh} has_stationfinder: {has_stationfinder}, has_battery: {has_battery}")
@@ -569,6 +559,17 @@ def run_simulation():
                     csId_stationfinder = traci.vehicle.getParameter(veh, "device.stationfinder.chargingStation")  # 's'
                     csId_battery = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")  # 'b'
                     reroutings.tick_update_vehicle(reroutingData,veh,csId_stationfinder,csId_battery,sim_time)
+                    # If the EV is looking for a station, teleporting is disabled
+                    if csId_stationfinder != "":
+                        wt=traci.vehicle.getWaitingTime(veh)
+                        if wt == 49:
+                            print(f"Vehicle {veh} has waiting time {wt} at time {sim_time}")
+                            x,y = traci.vehicle.getPosition(veh)
+                            angle = traci.vehicle.getAngle(veh)
+                            xb, yb = step_back(x,y,angle)
+                            # Move the vehicle slightly to reset waiting time
+                            print(f"Moving vehicle {veh} slightly to reset waiting time with angle {angle}")
+                            traci.vehicle.moveToXY(veh, "", 0, xb, yb, angle=angle, keepRoute=1)
 
         # Vehicles which are starting to charge        
         for veh in traci.simulation.getStopStartingVehiclesIDList():
@@ -624,7 +625,6 @@ def step_back(x: float, y: float, angle_deg: float):
     ny = y - math.cos(a)
     return nx, ny
 
-
 def remove_files(WORKING_FOLDER, files_to_remove):
     """
     Delete a list of files inside a given folder.
@@ -679,7 +679,6 @@ def setChargingStationPowers(vehList):
         actualPower = power * factor
         traci.chargingstation.setParameter(csId, "power", actualPower)
         #print(f"Estacion {csId} tiene power: {actualPower}, maxPsoc: {maxPsoc}, maxPcp: {maxPcp}, maxPev: {maxPev}, factor: {factor}")
-
 
 def run_debug():
     traci.start([os.environ["SUMO_HOME"]+SUMO_BINARY, "-c", CONFIG_FILE])
