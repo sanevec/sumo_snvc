@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2025-09-01 12:10:03 by Eclipse SUMO netconvert Version 1.24.0
+<!-- generated on 2025-09-18 17:05:56 by Eclipse SUMO netconvert Version 1.24.0
 <netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <node-files value="cs_example/network.nod.xml"/>
-        <edge-files value="cs_example/network.edg.xml"/>
+        <node-files value="network.nod.xml"/>
+        <edge-files value="network.edg.xml"/>
     </input>
 
     <output>
-        <output-file value="cs_example/network.net.xml"/>
+        <output-file value="network.net.xml"/>
     </output>
 
 </netconvertConfiguration>

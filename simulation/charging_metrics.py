@@ -42,7 +42,10 @@ def _parse_sumocfg(config_path):
 
     out_elem = root.find("output")
 
-    charging_xml_path = _resolve_path(config_path, out_elem.find("chargingstations-output").get("value"))
+    charging_elem = out_elem.find("chargingstations-output")
+    if charging_elem is None or charging_elem.get("value") is None:
+        raise RuntimeError("chargingstations-output is required to compute charging metrics but is missing in the .sumocfg <output> section.")
+    charging_xml_path = _resolve_path(config_path, charging_elem.get("value"))
 
     fcd_elem = out_elem.find("fcd-output")
     if fcd_elem is None or fcd_elem.get("value") is None:

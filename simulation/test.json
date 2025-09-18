@@ -4,6 +4,8 @@
     "CONFIG_FILE" :"simulation.sumocfg",
     "NODES_FILE" :"network.nod.xml",
     "EDGES_FILE" :"network.edg.xml",
+    "CON_FILE" :"network.con.xml",
+    "TLL_FILE" :"network.tll.xml",
     "ADDITIONAL_FILE" :"infrastructure.add.xml",
     "NETWORK_FILE" :"network.net.xml",
     "ROUTES_FILE" :"routes.rou.xml",

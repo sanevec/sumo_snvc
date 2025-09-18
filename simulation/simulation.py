@@ -739,7 +739,7 @@ def run_debug2():
 def run(config):
     # Set up paths and files based on the configuration
     global FOLDER, WORKING_FOLDER, NODES_FILE, EDGES_FILE, ADDITIONAL_FILE
-    global NETWORK_FILE, CS_LIST, CS_SIZE, CS_POWER, ROUTES_FILE
+    global CON_FILE, TLL_FILE, NETWORK_FILE, CS_LIST, CS_SIZE, CS_POWER, ROUTES_FILE
     global SUMO_BINARY, CONFIG_FILE
 
     FOLDER = config["FOLDER"]
@@ -747,6 +747,8 @@ def run(config):
     WORKING_FOLDER = folder_setup(config, file_list)        
     NODES_FILE = WORKING_FOLDER + config["NODES_FILE"]
     EDGES_FILE = WORKING_FOLDER + config["EDGES_FILE"]
+    CON_FILE = WORKING_FOLDER + config["CON_FILE"]
+    TLL_FILE = WORKING_FOLDER + config["TLL_FILE"]
     ADDITIONAL_FILE = WORKING_FOLDER + config["ADDITIONAL_FILE"]
     NETWORK_FILE = WORKING_FOLDER + config["NETWORK_FILE"]
 
@@ -761,7 +763,7 @@ def run(config):
     replace_routes()
 
     # Convert network files
-    os.system(SUMO_HOME+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --output-file "+NETWORK_FILE) 
+    os.system(SUMO_HOME+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --connection-files "+CON_FILE+" --tllogic-files "+TLL_FILE+" --output-file "+NETWORK_FILE) 
     
     # Run SUMO simulation
     SUMO_BINARY = config["SUMO_BINARY"]

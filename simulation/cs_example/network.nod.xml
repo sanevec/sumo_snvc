@@ -1,14 +1,47 @@
-<nodes>
-    <node id="start" x="0.0" y="0.0"/>
-    <node id="end" x="0.0" y="200.0"/>
-    <node id="road-to-cs" x="0.0" y="30.0"/>
-    <node id="road-from-cs" x="0.0" y="130.0"/>
-    <!-- <node id="cs-start" x="50.0" y="35.0" type="traffic_light"/> -->
-    <node id="cs-start" x="50.0" y="30.0"/>
-    <node id="cs-end" x="50.0" y="130.0"/>
-    <node id="cs-start2" x="200.0" y="30.0"/>
-    <node id="cs-end2" x="200.0" y="130.0"/>
-    <!--<node id="start2" x="100.0" y="0.0"/>
-    <node id="end2" x="300.0" y="200.0"/>
-    <node id="start3" x="300.0" y="0.0"/>-->
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-09-18 18:06:51 by Eclipse SUMO netconvert Version 1.24.0
+<netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="network.net.xml"/>
+    </input>
+
+    <output>
+        <plain-output-prefix value="network"/>
+    </output>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.avoid-overlap value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="true"/>
+        <lefthand value="0"/>
+    </processing>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="5.50"/>
+        <rectangular-lane-cut value="0"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="0"/>
+    </pedestrian>
+
+</netconvertConfiguration>
+-->
+
+<nodes version="1.20" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/nodes_file.xsd">
+    <location netOffset="0.00,0.00" convBoundary="0.00,0.00,200.00,200.00" origBoundary="0.00,0.00,200.00,200.00" projParameter="!"/>
+
+    <node id="cs-end" x="50.00" y="130.00" type="priority"/>
+    <node id="cs-end2" x="200.00" y="130.00" type="priority"/>
+    <node id="cs-start" x="50.00" y="30.00" type="priority"/>
+    <node id="cs-start2" x="200.00" y="30.00" type="priority"/>
+    <node id="end" x="0.00" y="200.00" type="dead_end"/>
+    <node id="road-from-cs" x="0.00" y="130.00" type="priority"/>
+    <node id="road-to-cs" x="0.00" y="30.00" type="priority"/>
+    <node id="start" x="0.00" y="0.00" type="dead_end"/>
 </nodes>
