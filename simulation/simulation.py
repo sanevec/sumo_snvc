@@ -88,7 +88,7 @@ def folder_setup(param_dict, file_names):
     for name in file_names:
         src_path = FOLDER + name
         dst_path = folder_path + name
-        print(f"Copying {src_path} to {dst_path}")
+        
         with open(src_path, 'r', encoding='utf-8') as f_in:
             content = f_in.read()
 
