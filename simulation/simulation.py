@@ -34,6 +34,7 @@ import re
 import itertools
 import argparse
 import json
+import xml.etree.ElementTree as ET
 
 def expand_grid(flat_config):
     """
@@ -87,7 +88,7 @@ def folder_setup(param_dict, file_names):
     for name in file_names:
         src_path = FOLDER + name
         dst_path = folder_path + name
-
+        print(f"Copying {src_path} to {dst_path}")
         with open(src_path, 'r', encoding='utf-8') as f_in:
             content = f_in.read()
 
@@ -188,6 +189,25 @@ def replace_routes():
 
     with open(ROUTES_FILE, "w", encoding="utf-8") as f:
         f.write(content)
+
+def fix_connections(file):
+    """Fix connections file by renaming edges in CS_LIST"""
+    tree = ET.parse(file)
+    root = tree.getroot()
+
+    for conn in root.findall("connection"):
+        # Check 'from'
+        from_edge = conn.get("from")
+        if from_edge in CS_LIST:
+            conn.set("from", f"second_{from_edge}")
+
+        # Check 'to'
+        to_edge = conn.get("to")
+        if to_edge in CS_LIST:
+            conn.set("to", f"first_{to_edge}")
+
+    # Save back to the same file
+    tree.write(file, encoding="utf-8", xml_declaration=True)
 
 def obtain_edge_ids():
     '''
@@ -606,13 +626,6 @@ def run_simulation():
     charging_metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json", CS_SIZE)
     traffic_metrics.extract_traffic_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "traffic_metrics.json")
 
-    # Clean up temporary files
-    remove_files('', [NETWORK_FILE, EDGES_FILE, NODES_FILE, ADDITIONAL_FILE, ROUTES_FILE, CONFIG_FILE])
-    ouput_files = [WORKING_FOLDER+f for f in os.listdir(WORKING_FOLDER) if f.startswith('output')]
-    remove_files('', ouput_files)
-
-    # Print summary or calculate combined metric for genetic algorithm optimization
-
 def step_back(x: float, y: float, angle_deg: float):
     """
     Returns the point located 1 unit backwards from (x, y),
@@ -737,6 +750,7 @@ def run_debug2():
     traci.close()
 
 def run(config):
+    # netconvert --sumo-net-file network.net.xml --plain-output-prefix network
     # Set up paths and files based on the configuration
     global FOLDER, WORKING_FOLDER, NODES_FILE, EDGES_FILE, ADDITIONAL_FILE
     global CON_FILE, TLL_FILE, NETWORK_FILE, CS_LIST, CS_SIZE, CS_POWER, ROUTES_FILE
@@ -746,9 +760,8 @@ def run(config):
     file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
     WORKING_FOLDER = folder_setup(config, file_list)        
     NODES_FILE = WORKING_FOLDER + config["NODES_FILE"]
-    EDGES_FILE = WORKING_FOLDER + config["EDGES_FILE"]
-    CON_FILE = WORKING_FOLDER + config["CON_FILE"]
-    TLL_FILE = WORKING_FOLDER + config["TLL_FILE"]
+    EDGES_FILE = WORKING_FOLDER + config["EDGES_FILE"]    
+    
     ADDITIONAL_FILE = WORKING_FOLDER + config["ADDITIONAL_FILE"]
     NETWORK_FILE = WORKING_FOLDER + config["NETWORK_FILE"]
 
@@ -762,6 +775,12 @@ def run(config):
     ROUTES_FILE = WORKING_FOLDER + config["ROUTES_FILE"]
     replace_routes()
 
+    # Fix connections file
+    CON_FILE = WORKING_FOLDER + config["CON_FILE"]
+    fix_connections(CON_FILE)
+    TLL_FILE = WORKING_FOLDER + config["TLL_FILE"]
+    fix_connections(TLL_FILE)
+
     # Convert network files
     os.system(SUMO_HOME+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --connection-files "+CON_FILE+" --tllogic-files "+TLL_FILE+" --output-file "+NETWORK_FILE) 
     
@@ -769,6 +788,13 @@ def run(config):
     SUMO_BINARY = config["SUMO_BINARY"]
     CONFIG_FILE = WORKING_FOLDER + config["CONFIG_FILE"]      
     run_simulation()
+
+    # Clean up temporary files
+    remove_files('', [NETWORK_FILE, EDGES_FILE, NODES_FILE, ADDITIONAL_FILE, ROUTES_FILE, CON_FILE, TLL_FILE, CONFIG_FILE])
+    ouput_files = [WORKING_FOLDER+f for f in os.listdir(WORKING_FOLDER) if f.startswith('output')]
+    remove_files('', ouput_files)
+
+    # Print summary or calculate combined metric for genetic algorithm optimization
     return WORKING_FOLDER  
 
 if __name__ == "__main__":

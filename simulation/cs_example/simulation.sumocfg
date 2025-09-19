@@ -21,11 +21,11 @@
 
     <time>
         <begin value="0"/>
-        <end value="1500"/>
+        <end value="86400"/>
     </time>
   
     <processing>
-        <time-to-teleport value="50"/>
+        <time-to-teleport value="300"/>
     </processing>
     
     <report>

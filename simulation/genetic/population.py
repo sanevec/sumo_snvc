@@ -3,6 +3,7 @@ from multiprocessing import Pool
 import os
 from individual import Individual
 from config import GA_PARAMS
+from mpi4py import MPI
 
 class Population:
     def __init__(self, params):
@@ -115,3 +116,34 @@ class Population:
         pid = os.getpid()
         print(f"[Proceso {pid}] Resultado: {ind}")
         return ind
+    
+    def evaluate_mpi(self):
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+        n = len(self.individuals)
+        chunk_size = n // size
+        remainder = n % size
+
+        if rank < remainder:
+            start = rank * (chunk_size + 1)
+            end = start + (chunk_size + 1)
+        else:
+            start = rank * chunk_size + remainder
+            end = start + chunk_size
+
+        # Cada proceso evalúa sus individuos
+        local_chunk = self.individuals[start:end]
+        for ind in local_chunk:
+            ind.evaluate()
+            print(f"Proceso {rank} evaluando individuo {ind.genome} con fitness {ind.fitness}")
+
+        # Recolectar resultados de todos los procesos
+        all_chunks = comm.gather(local_chunk, root=0)
+        if rank == 0:
+            self.individuals = [ind for chunk in all_chunks for ind in chunk]
+
+        print(f"Proceso {rank} ha terminado de evaluar sus individuos.")
+        if rank == 0:
+            print(self)
