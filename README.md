@@ -62,11 +62,13 @@ You can get information about the usage of the script with:
 python3 simulation.py --help
 ```
 ## 🧬 Genetic Algorithm
-🚧 Work in Progress...
-
+A Genetic Algorithm implementation is available at simulation/genetic/ folder. The script runs in parallel with MPI library in Python, the config.py file holds the information to run the genetic algorithm, with a pointer to the .json file used in the simulation.py script. To run the algorithm with 16 cores (for example):
+```bash
+mpirun -n 16 python3 main.py
+```
 In the context of the SANEVEC project, we are proposing an optimal set of charging station locations for Sevilla Este to minimize traffic jams and contamination. 
 ```text
-Algorithm Genetic
+Genetic Algorithm
     Initialize population P
     Evaluate fitness of individuals in P
 
@@ -76,7 +78,7 @@ Algorithm Genetic
     End For
 
     Return best solution found in P
-End Algorithm
+End 
 ```
 Each individual of the population for the genetic algorithm has a list of charging station locations taken from a list of possible edges, taking a solution with 5 charging stations as an example, this would be the genome structure:
 

@@ -21,7 +21,7 @@
 
     <time>
         <begin value="0"/>
-        <end value="86400"/>
+        <end value="1500"/>
     </time>
   
     <processing>

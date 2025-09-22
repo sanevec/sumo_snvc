@@ -122,6 +122,10 @@ class Population:
         rank = comm.Get_rank()
         size = comm.Get_size()
 
+        # Broadcast current population from root to all ranks
+        self.individuals = comm.bcast(self.individuals if rank == 0 else None, root=0)
+
+        # Compute balanced slice indices for each rank
         n = len(self.individuals)
         chunk_size = n // size
         remainder = n % size
@@ -133,13 +137,14 @@ class Population:
             start = rank * chunk_size + remainder
             end = start + chunk_size
 
-        # Cada proceso evalúa sus individuos
+        # Local evaluation (each rank evaluates its assigned chunk)
         local_chunk = self.individuals[start:end]
         for ind in local_chunk:
-            ind.evaluate()
+            ind.evaluate(rank=rank)
             print(f"Proceso {rank} evaluando individuo {ind.genome} con fitness {ind.fitness}")
 
-        # Recolectar resultados de todos los procesos
+        # Synchronize all ranks and gather results
+        comm.Barrier()
         all_chunks = comm.gather(local_chunk, root=0)
         if rank == 0:
             self.individuals = [ind for chunk in all_chunks for ind in chunk]

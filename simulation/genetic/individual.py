@@ -12,7 +12,7 @@ class Individual:
         self.genome = genome or random.sample(range(n_edges), length)
         self.fitness = fitness or None
 
-    def evaluate(self):
+    def evaluate(self, rank=0):
         print("Evaluating individual with genome:", self.genome)
         cs_list = [GA_PARAMS["cs_list"][i] for i in self.genome]
         print("Evaluating individual with CSs:", cs_list)
@@ -22,7 +22,7 @@ class Individual:
         
         #config['CS_LIST'] = cs_list
         print("Running simulation with config:", config)
-        results_folder = simulation.run(config)        
+        results_folder = simulation.run(config, port=8814+rank)        
         print(f"Simulation completed. Results in folder: {results_folder}")
         
         with open(results_folder+'charging_metrics.json', "r", encoding="utf-8") as f:
@@ -37,6 +37,7 @@ class Individual:
         
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.fitness = sum(self.genome)  # Placeholder for actual fitness calculation!!
+        print(f"Calculated fitness: {self.fitness} with rank {rank}")
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
     def mutate(self, n_edges=50):

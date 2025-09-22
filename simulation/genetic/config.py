@@ -1,5 +1,5 @@
 GA_PARAMS = {
-    "population_size": 5,
+    "population_size": 15,
     "generations": 3,
     "mutation_prob": 0.05,
     "elitism_size": 1,

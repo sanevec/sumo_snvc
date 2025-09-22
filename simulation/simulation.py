@@ -58,7 +58,7 @@ def expand_grid(flat_config):
     for combination in itertools.product(*grid_values):
         yield dict(zip(grid_keys, combination))
 
-def folder_setup(param_dict, file_names):
+def folder_setup(param_dict, file_names, port=''):
     """
     Creates a timestamped folder, copies the given files into it, and writes params.txt.
 
@@ -81,7 +81,7 @@ def folder_setup(param_dict, file_names):
     # Count how many runs already exist for today
     n = len(existing) + 1
     folder_name = f"{date_prefix}-{n}"
-    folder_path = os.path.join(runs_dir, folder_name) + "/"
+    folder_path = os.path.join(runs_dir, folder_name) + port + "/"
     os.makedirs(folder_path, exist_ok=True)
 
     # Copy files
@@ -552,9 +552,9 @@ def generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xp, yp, length=6
 
 ############################################
 
-def run_simulation():
+def run_simulation(port):
     # Start the SUMO simulation
-    traci.start([SUMO_HOME+SUMO_BINARY, "-c", CONFIG_FILE])
+    traci.start([SUMO_HOME+SUMO_BINARY, "-c", CONFIG_FILE], port=port)
     
     # Initialize the simulation information
     simulationData = emissions.get_initial_simulation_information()
@@ -749,7 +749,7 @@ def run_debug2():
 
     traci.close()
 
-def run(config):
+def run(config, port=8813):
     # netconvert --sumo-net-file network.net.xml --plain-output-prefix network
     # Set up paths and files based on the configuration
     global FOLDER, WORKING_FOLDER, NODES_FILE, EDGES_FILE, ADDITIONAL_FILE
@@ -758,7 +758,7 @@ def run(config):
 
     FOLDER = config["FOLDER"]
     file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
-    WORKING_FOLDER = folder_setup(config, file_list)        
+    WORKING_FOLDER = folder_setup(config, file_list, '_'+str(port))        
     NODES_FILE = WORKING_FOLDER + config["NODES_FILE"]
     EDGES_FILE = WORKING_FOLDER + config["EDGES_FILE"]    
     
@@ -787,7 +787,7 @@ def run(config):
     # Run SUMO simulation
     SUMO_BINARY = config["SUMO_BINARY"]
     CONFIG_FILE = WORKING_FOLDER + config["CONFIG_FILE"]      
-    run_simulation()
+    run_simulation(port)
 
     # Clean up temporary files
     remove_files('', [NETWORK_FILE, EDGES_FILE, NODES_FILE, ADDITIONAL_FILE, ROUTES_FILE, CON_FILE, TLL_FILE, CONFIG_FILE])
