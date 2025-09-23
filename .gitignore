@@ -1,5 +1,6 @@
 simulation/runs
 simulation/__pycache__
 simulation/genetic/runs
+simulation/paperDvsC/runs
 simulation/genetic/__pycache__
 simulation/sevilla/generated_routes.rou.xml

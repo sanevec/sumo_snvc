@@ -177,18 +177,41 @@ def add_charging_stations():
 
 def replace_routes():
     """Replace whole word occurrences of each edge ID in CS_LIST inside ROUTES_FILE 
-    with 'first_<id> second_<id>', even if surrounded by quotes or spaces.
-    """
-    with open(ROUTES_FILE, "r", encoding="utf-8") as f:
-        content = f.read()
+    with 'first_<id> second_<id>', while maintaining the original order of edges."""
+    
+    # Parse the XML file
+    tree = ET.parse(ROUTES_FILE)
+    root = tree.getroot()
 
-    for cs in CS_LIST:
-        replacement = f"first_{cs} second_{cs}"
-        pattern = rf"(?<!\w){re.escape(cs)}(?!\w)"
-        content = re.sub(pattern, replacement, content)
+    # Iterate over all vehicle elements
+    for vehicle in root.findall('vehicle'):
+        # Find the route element within the vehicle
+        route = vehicle.find('route')
+        if route is not None:
+            # Get the value of the 'edges' attribute
+            edges = route.attrib.get('edges', "")
+            
+            # Split the edges into a list of edge IDs
+            edge_ids = edges.split()
 
-    with open(ROUTES_FILE, "w", encoding="utf-8") as f:
-        f.write(content)
+            # Create a new list to store the modified edge IDs, while preserving order
+            modified_edges = []
+
+            # Iterate over each edge ID in the original order
+            for edge_id in edge_ids:
+                # Check if the edge ID is in the CS_LIST
+                if edge_id in CS_LIST:
+                    # Replace with the desired format 'first_<id> second_<id>'
+                    modified_edges.append(f"first_{edge_id} second_{edge_id}")
+                else:
+                    # Otherwise, keep the edge ID as it is
+                    modified_edges.append(edge_id)
+
+            # Join the modified edge IDs back into a single string, maintaining the original order
+            route.attrib['edges'] = " ".join(modified_edges)
+
+    # Write the modified XML back to the file
+    tree.write(ROUTES_FILE, encoding="utf-8", xml_declaration=True)
 
 def fix_connections(file):
     """Fix connections file by renaming edges in CS_LIST"""
