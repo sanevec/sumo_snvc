@@ -1,0 +1,35 @@
+<configuration>
+    <input>
+        <net-file value="network.net.xml"/>
+        <route-files value="routes.rou.xml"/>
+        <additional-files value="infrastructure.add.xml"/>
+    </input>
+
+    <output>
+        <tripinfo-output value="output-tripinfo.xml"/>
+    	<summary-output value="output-summary.xml"/>
+    	<emission-output value="output-emissions.xml"/>
+    	<lanedata-output value="output-lanedata.xml"/>
+        <fcd-output value="output-fcd.xml"/>
+        <lanechange-output value="output-lanechange.xml"/>
+        <queue-output value="output-queue.xml"/>
+    	<chargingstations-output value="output-chargingstations.xml"/>
+        <chargingstations-output.aggregated value="true"/>
+    	<deadlock-output value="output-deadlock.xml"/>
+    	<statistic-output value="output-statistic.xml"/>
+    </output>
+
+    <time>
+        <begin value="0"/>
+        <end value="1500"/>
+    </time>
+  
+    <processing>
+        <time-to-teleport value="300"/>
+    </processing>
+    
+    <report>
+        <verbose value="true"/>
+        <no-step-log value="true"/>
+    </report>
+</configuration>

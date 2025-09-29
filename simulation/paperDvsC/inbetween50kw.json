@@ -1,0 +1,15 @@
+{
+    "SUMO_BINARY": "/bin/sumo",
+    "FOLDER": ["../sevilla/"],
+    "CONFIG_FILE" :"simulation.sumocfg",
+    "NODES_FILE" :"network.nod.xml",
+    "EDGES_FILE" :"network.edg.xml",
+    "CON_FILE" :"network.con.xml",
+    "TLL_FILE" :"network.tll.xml",
+    "ADDITIONAL_FILE" :"infrastructure.add.xml",
+    "NETWORK_FILE" :"osm.net.xml",
+    "ROUTES_FILE" :"rutas.rou.xml",
+    "CS_LIST": [["194647698#0","-375766978#2","61278256#0","331357861#0","69975864#0","-329159952#1","334892162#0","293714103#0","239205804#1","81735377#1"]],
+    "CS_SIZE": [25],
+    "CS_POWER": [[150000, 1]]     
+}

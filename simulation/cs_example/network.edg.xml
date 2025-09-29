@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-09-18 18:06:51 by Eclipse SUMO netconvert Version 1.24.0
+<netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="network.net.xml"/>
+    </input>
+
+    <output>
+        <plain-output-prefix value="network"/>
+    </output>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.avoid-overlap value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="true"/>
+        <lefthand value="0"/>
+    </processing>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="5.50"/>
+        <rectangular-lane-cut value="0"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="0"/>
+    </pedestrian>
+
+</netconvertConfiguration>
+-->
+
+<edges version="1.20" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/edges_file.xsd">
+    <edge id="e1" from="start" to="road-to-cs" priority="1" numLanes="1" speed="13.89"/>
+    <edge id="e2" from="road-to-cs" to="road-from-cs" priority="1" numLanes="1" speed="13.89"/>
+    <edge id="e3" from="road-from-cs" to="end" priority="1" numLanes="1" speed="13.89"/>
+    <edge id="e4" from="road-to-cs" to="cs-start" priority="1" numLanes="1" speed="13.89"/>
+    <edge id="e5" from="cs-start" to="cs-end" priority="1" numLanes="1" speed="13.89"/>
+    <edge id="e5-vuelta" from="cs-end" to="cs-start" priority="1" numLanes="1" speed="13.89"/>
+    <edge id="e6" from="cs-end" to="road-from-cs" priority="-1" numLanes="1" speed="13.89"/>
+    <edge id="e7" from="cs-start" to="cs-start2" priority="1" numLanes="1" speed="13.89"/>
+    <edge id="e8" from="cs-start2" to="cs-end2" priority="-1" numLanes="1" speed="13.89"/>
+    <edge id="e9" from="cs-end2" to="cs-end" priority="1" numLanes="1" speed="13.89"/>
+</edges>

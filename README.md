@@ -14,54 +14,61 @@
   This project implements the EV fast charging and charge-site power limitations described <a href="https://doi.org/10.1007/978-3-031-87345-4_6">in this paper</a> for enhanced simulation capabilities.
 </p>
 
+---
 
+**Author**: Juan Alberto Gallardo Gómez - jgallardo7@us.es  
+**Date**: 2025   
+**Version**: 1.0.0
+
+---
 
 ## 🛠️ Build and Installation
+You should have the latest version of SUMO installed, in linux:
+
+```bash
+sudo add-apt-repository ppa:sumo/stable
+sudo apt-get update
+sudo apt-get install sumo sumo-tools sumo-doc
+```
 Clone the repository:
 
 ```bash
 git clone  https://github.com/sanevec/sumo_snvc
 cd sumo_snvc
-export SUMO_HOME="$PWD"
 ```
-Install dependencies:
+In case you have a custom SUMO build, you can set SUMO_HOME environment variable as your current working directory:
 
 ```bash
-sudo apt-get install $(cat build_config/build_req_deb.txt build_config/tools_req_deb.txt)
-sudo apt-get install libgdal-dev
-sudo apt update
-sudo apt install libopenscenegraph-dev openscenegraph libopenthreads-dev
-```
-Configure and build:
-
-```bash
-cmake -B build .
-cmake --build build -j$(nproc)
+python3 set_sumo_home.py
 ```
 ## 🚀 Run a Test
-After compilation, binaries will be located in the bin/ folder.
-
-A basic SUMO test simulation is available in the genetic/ folder. Run it like this:
+A basic SUMO test simulation is available in the simulation/cs_example/ folder. Run it like this:
 
 ```bash
-cd genetic
-../bin/sumo-gui -c simulation.sumocfg
+cd simulation
+sumo-gui -c cs_example/simulation.sumocfg
 ```
-To use the charging add-on capabilities, it is required to launch the simulation from a Python script and control every step using TraCI. A Python virtual environment is required to launch the simulation. Instructions to create it (outside of the project folder):
+To use the charging add-on capabilities and get the log information, it is required to launch the simulation from a Python script and control every step using TraCI. A Python virtual environment is required to launch the simulation. Instructions to create it (outside of the project folder):
 ```bash
 python3 -m venv venv-sumo
 source venv-sumo/bin/activate
 ```
-To run the test from genetic/ folder:
+To run the test from simulation/ folder:
 ```bash
-python3 traci_test.py
+python3 simulation.py --config test.json
+```
+You can get information about the usage of the script with:
+```bash
+python3 simulation.py --help
 ```
 ## 🧬 Genetic Algorithm
-🚧 Work in Progress...
-
+A Genetic Algorithm implementation is available at simulation/genetic/ folder. The script runs in parallel with MPI library in Python, the config.py file holds the information to run the genetic algorithm, with a pointer to the .json file used in the simulation.py script. To run the algorithm with 16 cores (for example):
+```bash
+mpirun -n 16 python3 main.py
+```
 In the context of the SANEVEC project, we are proposing an optimal set of charging station locations for Sevilla Este to minimize traffic jams and contamination. 
 ```text
-Algorithm Genetic
+Genetic Algorithm
     Initialize population P
     Evaluate fitness of individuals in P
 
@@ -71,7 +78,7 @@ Algorithm Genetic
     End For
 
     Return best solution found in P
-End Algorithm
+End 
 ```
 Each individual of the population for the genetic algorithm has a list of charging station locations taken from a list of possible edges, taking a solution with 5 charging stations as an example, this would be the genome structure:
 

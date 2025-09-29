@@ -1,0 +1,15 @@
+{
+    "SUMO_BINARY": "/bin/sumo-gui",
+    "FOLDER": ["cs_example/"],
+    "CONFIG_FILE" :"simulation.sumocfg",
+    "NODES_FILE" :"network.nod.xml",
+    "EDGES_FILE" :"network.edg.xml",
+    "CON_FILE" :"network.con.xml",
+    "TLL_FILE" :"network.tll.xml",
+    "ADDITIONAL_FILE" :"infrastructure.add.xml",
+    "NETWORK_FILE" :"network.net.xml",
+    "ROUTES_FILE" :"routes.rou.xml",
+    "CS_LIST": [["e5", "e9"]],
+    "CS_SIZE": [2],
+    "CS_POWER": [[150000, 0.3]]     
+}

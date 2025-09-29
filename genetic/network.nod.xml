@@ -1,8 +1,0 @@
-<nodes>
-    <node id="start" x="0.0" y="0.0"/>
-    <node id="end" x="0.0" y="200.0"/>
-    <node id="road-to-cs" x="0.0" y="60.0"/>
-    <node id="road-from-cs" x="0.0" y="130.0"/>
-    <node id="cs-start" x="50.0" y="60.0" type="traffic_light"/>
-    <node id="cs-end" x="50.0" y="130.0"/>
-</nodes>
