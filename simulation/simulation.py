@@ -176,6 +176,41 @@ def add_charging_stations():
     print('Charging stations added successfully')
 
 def replace_routes():
+    """Replace edge IDs in CS_LIST inside ROUTES_FILE.
+    Handles routes inside <vehicle> and routes defined directly under <routes> root.
+    Maintains the original order of edges.
+    """
+    
+    # Parse the XML file
+    tree = ET.parse(ROUTES_FILE)
+    root = tree.getroot()
+
+    # --- 1. Replace edges inside vehicles ---
+    for vehicle in root.findall('vehicle'):
+        route = vehicle.find('route')
+        if route is not None:
+            edges = route.attrib.get('edges', "")
+            edge_ids = edges.split()
+            modified_edges = [
+                f"first_{eid} second_{eid}" if eid in CS_LIST else eid
+                for eid in edge_ids
+            ]
+            route.attrib['edges'] = " ".join(modified_edges)
+
+    # --- 2. Replace edges in routes defined directly under root ---
+    for route in root.findall('route'):
+        edges = route.attrib.get('edges', "")
+        edge_ids = edges.split()
+        modified_edges = [
+            f"first_{eid} second_{eid}" if eid in CS_LIST else eid
+            for eid in edge_ids
+        ]
+        route.attrib['edges'] = " ".join(modified_edges)
+
+    # Write back the modified XML
+    tree.write(ROUTES_FILE, encoding="utf-8", xml_declaration=True)
+
+def replace_routes2():
     """Replace whole word occurrences of each edge ID in CS_LIST inside ROUTES_FILE 
     with 'first_<id> second_<id>', while maintaining the original order of edges."""
     
@@ -580,7 +615,7 @@ def run_simulation(port):
     traci.start([SUMO_HOME+SUMO_BINARY, "-c", CONFIG_FILE], port=port)
     
     # Initialize the simulation information
-    simulationData = emissions.get_initial_simulation_information()
+    simulationData = emissions.get_initial_simulation_information(saveBuildings=False, saveVegetation=False, networkFilePath=NETWORK_FILE)
     reroutingData = reroutings.new_rerouting_data()
     vehicleEmissions = {}
     vehList = []
@@ -772,12 +807,12 @@ def run_debug2():
 
     traci.close()
 
-def run(config, port=8813):
+def run(config, port=8816):
     # netconvert --sumo-net-file network.net.xml --plain-output-prefix network
     # Set up paths and files based on the configuration
     global FOLDER, WORKING_FOLDER, NODES_FILE, EDGES_FILE, ADDITIONAL_FILE
     global CON_FILE, TLL_FILE, NETWORK_FILE, CS_LIST, CS_SIZE, CS_POWER, ROUTES_FILE
-    global SUMO_BINARY, CONFIG_FILE
+    global SUMO_BINARY, CONFIG_FILE, POLY_FILE
 
     FOLDER = config["FOLDER"]
     file_list = [f for f in os.listdir(FOLDER) if os.path.isfile(os.path.join(FOLDER, f))]
@@ -803,6 +838,7 @@ def run(config, port=8813):
     fix_connections(CON_FILE)
     TLL_FILE = WORKING_FOLDER + config["TLL_FILE"]
     fix_connections(TLL_FILE)
+    POLY_FILE = WORKING_FOLDER + config.get("POLY_FILE", "")
 
     # Convert network files
     os.system(SUMO_HOME+"/bin/netconvert --node-files "+NODES_FILE+" --edge-files "+EDGES_FILE+" --connection-files "+CON_FILE+" --tllogic-files "+TLL_FILE+" --output-file "+NETWORK_FILE) 
@@ -813,9 +849,9 @@ def run(config, port=8813):
     run_simulation(port)
 
     # Clean up temporary files
-    remove_files('', [NETWORK_FILE, EDGES_FILE, NODES_FILE, ADDITIONAL_FILE, ROUTES_FILE, CON_FILE, TLL_FILE, CONFIG_FILE])
-    ouput_files = [WORKING_FOLDER+f for f in os.listdir(WORKING_FOLDER) if f.startswith('output')]
-    remove_files('', ouput_files)
+    remove_files('', [NETWORK_FILE, EDGES_FILE, NODES_FILE, ADDITIONAL_FILE, ROUTES_FILE, CON_FILE, TLL_FILE, POLY_FILE, CONFIG_FILE])
+    #ouput_files = [WORKING_FOLDER+f for f in os.listdir(WORKING_FOLDER) if f.startswith('output')]
+    #remove_files('', ouput_files)
 
     # Print summary or calculate combined metric for genetic algorithm optimization
     return WORKING_FOLDER  
@@ -837,7 +873,10 @@ if __name__ == "__main__":
             "  CONFIG_FILE      (str)          → .sumocfg file name used in each run\n"
             "  NODES_FILE       (str)          → .nod.xml file name used in each run\n"
             "  EDGES_FILE       (str)          → .edg.xml file name used in each run\n"
+            "  CON_FILE         (str)          → .con.xml file name used in each run\n"
+            "  TLL_FILE         (str)          → .tll.xml file name used in each run\n"
             "  ADDITIONAL_FILE  (str)          → .add.xml file name used in each run\n"
+            "  POLY_FILE        (str)          → .poly.xml file name used in each run (optional, can be empty string)\n"
             "  NETWORK_FILE     (str)          → .net.xml file name used in each run\n"
             "  ROUTES_FILE      (str)          → .rou.xml file name used in each run\n"
             "  CS_LIST          (list of str)  → list of edges for charging stations\n"
@@ -858,6 +897,8 @@ if __name__ == "__main__":
         "CONFIG_FILE",
         "NODES_FILE",
         "EDGES_FILE",
+        "CON_FILE",
+        "TLL_FILE",
         "ADDITIONAL_FILE",
         "NETWORK_FILE",
         "ROUTES_FILE",

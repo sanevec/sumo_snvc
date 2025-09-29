@@ -24,7 +24,12 @@ SAMPLE USE AT MAIN SIMULATION FILE:
     traci.close()
 '''
 
-def get_initial_simulation_information(saveStreetMap=False, saveBuildings=False, buildingFilePath=None):
+def get_initial_simulation_information(saveStreetMap=True, saveBuildings=True, buildingFilePath="", saveVegetation=True, vegetationFilePath="", 
+                                       listOfVegetationTags=["landuse.orchard", "leisure.park", "leisure.garden", "landuse.forest", "landuse.grass", "landuse.village_green",
+                                                            "natural.heath", "natural.tree_row", "natural.tree", "leisure.golf_course", "landuse.farmland", "natural.wood", 
+                                                            "natural.scrub", "natural.shrubbery", "natural.grassland", "natural.fell", "natural.tundra", "landuse.vineyard", 
+                                                            "landuse.flowerbed", "landuse.meadow", "landuse.greenery", "landuse.plant_nursery"], 
+                                        applyOriginOffset=True, networkFilePath=""):
     simulationData = {}
     simulationData['simulationStepTime'] = traci.simulation.getDeltaT()
     mapSize = traci.simulation.getNetBoundary()
@@ -32,7 +37,9 @@ def get_initial_simulation_information(saveStreetMap=False, saveBuildings=False,
     if saveStreetMap:
         simulationData['map'] = get_map()
     if saveBuildings:
-        simulationData['buildings'] = get_buildings(buildingFilePath)
+        simulationData['buildings'] = get_buildings(buildingFilePath, applyOriginOffset, networkFilePath)
+    if saveVegetation:
+        simulationData['vegetation'] = get_vegetation(vegetationFilePath, listOfVegetationTags, applyOriginOffset, networkFilePath)
     return simulationData
 
 
@@ -60,23 +67,71 @@ def get_map():
 
     return mapData
 
-def get_buildings(buildingFilePath):
+def get_buildings(buildingFilePath, applyOriginOffset, networkFilePath):
     buildingsData = []
 
     # Open building (polygon) xml file from OSM and access to xml tree root
     polygonXmlTreeRoot = ET.parse(buildingFilePath).getroot()
+    
+    # Calculate offset between buildings and street origin point
+    originOffset = get_origin_offset(polygonXmlTreeRoot, applyOriginOffset, networkFilePath)
 
     # Iterate through each child to find buildings polygons
     for child in polygonXmlTreeRoot:
-        if "type" in child.attrib and "building" in child.attrib["type"]:
-            poligonFormatPoint = []
+        if "type" in child.attrib and "building" in child.attrib["type"] and "shape" in child.attrib:
             listOfRawPoints = child.attrib["shape"].split(" ")
-            for rawPoint in listOfRawPoints:
-                poligonFormatPoint.append(list(rawPoint.split(",")))
+            poligonFormatPoint = format_raw_poligon(listOfRawPoints, originOffset)
             # Add building info (list of point in [x,y] format)
             buildingsData.append(poligonFormatPoint)
 
     return buildingsData
+
+
+def get_vegetation(vegetationFilePath, listOfVegetationTags, applyOriginOffset, networkFilePath):
+        vegetationData = []
+
+        # Open building (polygon) xml file from OSM and access to xml tree root
+        polygonXmlTreeRoot = ET.parse(vegetationFilePath).getroot()
+
+        # Calculate offset between buildings and street origin point
+        originOffset = get_origin_offset(polygonXmlTreeRoot, applyOriginOffset, networkFilePath)
+
+        # Iterate through each child to find vegetation polygons (has one type of listOfVegetationTags with shape atributte)
+        for child in polygonXmlTreeRoot:
+            for tag in listOfVegetationTags:
+                if "type" in child.attrib and tag in child.attrib["type"] and "shape" in child.attrib:
+                    listOfRawPoints = child.attrib["shape"].split(" ")
+                    poligonFormatPoint = format_raw_poligon(listOfRawPoints, originOffset)
+                    # Add vegetation info (list of point in [x,y] format)
+                    vegetationData.append(poligonFormatPoint)
+                    break
+
+        return vegetationData
+
+
+def get_origin_offset(polygonXmlTreeRoot, applyOriginOffset, networkFilePath):
+        # Calculate offset between buildings and street origin point
+        if applyOriginOffset:
+            #   1) Open network xml file from OSM 
+            networkXmlTreeRoot = ET.parse(networkFilePath).getroot()
+            #   2) Get the "netOffset" attribute of "location" element of network and polygon xml
+            networkOffset = networkXmlTreeRoot[0].attrib["netOffset"].split(",")
+            buildingOffset = polygonXmlTreeRoot[0].attrib["netOffset"].split(",")
+            #   3) Calculate the difference in origin offset between both data sources
+            originOffset = [float(networkOffset[0])-float(buildingOffset[0]), float(networkOffset[1])-float(buildingOffset[1])]
+        else:
+            originOffset = [0.0, 0.0]
+        return originOffset
+
+
+def format_raw_poligon(listOfRawPoints, originOffset):
+        # Convert from raw string format to list of [x,y] points with offset applied
+        poligonFormatPoint = []
+        for rawPoint in listOfRawPoints:
+            strPoint = list(rawPoint.split(","))
+            formatOffsetPoint = [float(strPoint[0])+originOffset[0], float(strPoint[1])+originOffset[1]]
+            poligonFormatPoint.append(formatOffsetPoint)
+        return poligonFormatPoint
 
 
 def get_final_simulation_information(simulationData, vehicleEmissions):
@@ -112,13 +167,14 @@ def get_instant_vehicle_emissions(simulationData):
 
 
 def save_output_data(simulationData, vehicleEmissions, outputFolder):
+    # Create the output folder if it does not exist
+    os.makedirs(outputFolder, exist_ok=True)
 
     # Save simulation information
     simulationDataFilePath = os.path.join(outputFolder, "simulation_data.txt")
     write_file(simulationData, simulationDataFilePath)
 
     # Save vehicle emissions data
-    emissionsFilePath = ""
     emissionsFilePath = os.path.join(outputFolder, "vehicle_emissions.txt")
     write_file(vehicleEmissions, emissionsFilePath)
     

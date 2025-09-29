@@ -1,7 +1,7 @@
 <configuration>
     <input>
         <net-file value="osm.net.xml"/>
-        <route-files value="generated_routes.rou.xml"/>
+        <route-files value="rutas.rou.xml"/>
         <additional-files value="infrastructure.add.xml"/>
     </input>
 
@@ -21,11 +21,12 @@
 
     <time>
         <begin value="0"/>
-        <end value="86400"/>
+        <end value="2400"/>
     </time>
   
     <processing>
-        <time-to-teleport value="50"/>
+        <ignore-route-errors value="true"/>
+        <time-to-teleport value="300"/>
     </processing>
     
     <report>
