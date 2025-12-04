@@ -1,7 +1,7 @@
 <configuration>
     <input>
         <net-file value="osm.net.xml"/>
-        <route-files value="rutas.rou.xml"/>
+        <route-files value="routes005.rou.xml"/>
         <additional-files value="infrastructure.add.xml"/>
     </input>
 

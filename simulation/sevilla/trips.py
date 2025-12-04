@@ -223,7 +223,7 @@ def create_route_file(vehicles:List[Vehicle], filename="generated_routes.rou.xml
         filename: Name of the output file
     """
     root = Element('routes')
-
+    print(electric_percentage)
     vtype_regular=  {'id': 'type1', 
          'minGap': '1.5',
          'accel': '3.2', 
@@ -297,7 +297,7 @@ def create_route_file(vehicles:List[Vehicle], filename="generated_routes.rou.xml
 
     for vehicle in vehicles_sorted:
         edges_str = " ".join(vehicle.edges)
-        vehicle_type = "EV" if i in electric_vehicles else "type1"
+        vehicle_type = "EV" if vehicle.vehicle_id in electric_vehicles else "type1"
 
         veh_elem = SubElement(root, 'vehicle', {
         'id': str(vehicle.vehicle_id),
