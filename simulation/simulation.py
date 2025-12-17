@@ -169,8 +169,8 @@ def add_charging_stations():
         if shape_points:
             x1, y1 = first_half[0]
             x2, y2 = second_half[-1]
-        length = 65
-        offset = 55
+        length = 250  # Length of the charging station lane
+        offset = length 
         x1, y1, x2, y2 = generate_parallel_segment_offset_from_point(x1, y1, x2, y2, xm, ym, length, offset)
         add_charging_station(edge_id, cs, x1, y1, x2, y2, length)
     print('Charging stations added successfully')
@@ -387,7 +387,7 @@ def get_edge_block(edge_id):
     else:
         return None
 
-def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, lane_length):
+def add_charging_station_old(edge_id, cs_group, x1, y1, x2, y2, lane_length):
     '''
     Adds a charging station to the network by creating the necessary nodes and edges.
     The charging station consists of a start node, an end node, and a lane with multiple
@@ -411,7 +411,7 @@ def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, lane_length):
     </edge>     
     """
     charging_points = "".join(
-        f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}" startPos="{lane_length-15}" endPos="{lane_length-10}" friendlyPos="true" power="{CS_POWER[0]}">'
+        f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}" startPos="{lane_length-25}" endPos="{lane_length-20}" friendlyPos="true" power="{CS_POWER[0]}">'
         f'\n    <param key="group" value="{cs_group}"/>'
         f'\n    <param key="chargingPort" value="CCS2"/>'
         f'\n    <param key="allowedPowerOutput" value="{CS_POWER[0]}"/>'
@@ -420,7 +420,494 @@ def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, lane_length):
         f'\n</chargingStation>' for i in range(CS_SIZE))
     add_edge_to_xml(EDGES_FILE, edges)
     add_cs_to_xml(ADDITIONAL_FILE, charging_points)
+
+def add_charging_station_single_lane(edge_id, cs_group, x1, y1, x2, y2, lane_length):
+    '''
+    Adds a charging station to the network by creating the necessary nodes and edges.
+    The charging station consists of a start node, an end node, and a lane with multiple
+    charging points. The function also adds the charging station to the additional.xml file.
+    '''
+    cs_start = f"cs_start_{edge_id}"
+    cs_end = f"cs_end_{edge_id}"
+    add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+    add_node_to_xml(NODES_FILE, cs_end, x2, y2)  
+    edges = f"""
+    <edge id="to_cs_{edge_id}" from="cs_{edge_id}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="cs_lanes_{edge_id}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="2">
+        <lane index="0" speed="13.89"/>
+        <lane index="1" speed="13.89"/> 
+    </edge>
+    <edge id="from_cs_{edge_id}" from="{cs_end}" to="cs_{edge_id}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>     
+    """
+    charging_station = f'\n<chargingStation id="cs_{edge_id}_0" lane="cs_lanes_{edge_id}_0" startPos="{lane_length/3*2}" endPos="{lane_length}" friendlyPos="true" power="{CS_POWER[0]}" chargeDelay="5" />'
+    
+    add_edge_to_xml(EDGES_FILE, edges)
+    add_cs_to_xml(ADDITIONAL_FILE, charging_station)
         
+def add_charging_station_three_lanes_one_between(edge_id, cs_group, x1, y1, x2, y2, lane_length):
+    '''
+    Adds a charging station to the network by creating the necessary nodes and edges.
+    The charging station consists of a start node, an end node, and a lane with multiple
+    charging points. The function also adds the charging station to the additional.xml file.
+    '''
+    cs_start = f"cs_start_{edge_id}"
+    cs_end = f"cs_end_{edge_id}"
+    add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+    add_node_to_xml(NODES_FILE, cs_end, x2, y2)  
+    lanes = "".join(f'<lane index="{i}" speed="13.89"/>' for i in range(7))
+    edges = f"""
+    <edge id="to_cs_{edge_id}" from="cs_{edge_id}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="cs_lanes_{edge_id}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="7">
+        {lanes}
+    </edge>
+    <edge id="from_cs_{edge_id}" from="{cs_end}" to="cs_{edge_id}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>     
+    """
+    charging_points = "".join(
+        f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}" startPos="{lane_length/3*2-15}" endPos="{lane_length-15}" friendlyPos="true" power="{CS_POWER[0]}" chargeDelay="5" />' for i in range(1,7,2))
+    add_edge_to_xml(EDGES_FILE, edges)
+    add_cs_to_xml(ADDITIONAL_FILE, charging_points)
+
+def add_charging_station_lanes_between(edge_id, cs_group, x1, y1, x2, y2, lane_length):
+    '''
+    Adds a charging station to the network by creating the necessary nodes and edges.
+    The charging station consists of a start node, an end node, and a lane with multiple
+    charging points. The function also adds the charging station to the additional.xml file.
+    '''
+    cs_start = f"cs_start_{edge_id}"
+    cs_end = f"cs_end_{edge_id}"
+    add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+    add_node_to_xml(NODES_FILE, cs_end, x2, y2)  
+    lanes = "".join(f'<lane index="{i}" speed="13.89"/>' for i in range(CS_SIZE*2+1))
+    edges = f"""
+    <edge id="to_cs_{edge_id}" from="cs_{edge_id}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="cs_lanes_{edge_id}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{CS_SIZE*2+1}">
+        {lanes}
+    </edge>
+    <edge id="from_cs_{edge_id}" from="{cs_end}" to="cs_{edge_id}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>     
+    """
+    charging_points = "".join(
+        f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}" startPos="{lane_length-25}" endPos="{lane_length-20}" friendlyPos="true" power="{CS_POWER[0]}" chargeDelay="5" />' for i in range(1,CS_SIZE*2+1,2))
+    
+    add_edge_to_xml(EDGES_FILE, edges)
+    add_cs_to_xml(ADDITIONAL_FILE, charging_points)
+
+def add_charging_station_three_edges(edge_id, cs_group, x1, y1, x2, y2, lane_length):
+    '''
+    Adds a charging station to the network by creating the necessary nodes and edges.
+    The charging station consists of a start node, an end node, and a lane with multiple
+    charging points. The function also adds the charging station to the additional.xml file.
+    '''
+    cs_start = f"cs_start_{edge_id}"
+    cs_end = f"cs_end_{edge_id}"
+    add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+    add_node_to_xml(NODES_FILE, cs_end, x2, y2)  
+    lanes = "".join(f'<lane index="{i}" speed="13.89"/>' for i in range(2))
+    x1p1, y1p1, x2p1, y2p1 = shifted_segment(x1, y1, x2, y2, 10)
+    x1p2, y1p2, x2p2, y2p2 = shifted_segment(x1, y1, x2, y2, 20)
+
+    edges = f"""
+    <edge id="to_cs_{edge_id}" from="cs_{edge_id}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="cs_lanes_{edge_id}_0" from="{cs_start}" to="{cs_end}" priority="1" numLanes="2">
+        {lanes}
+    </edge>
+    <edge id="cs_lanes_{edge_id}_1" from="{cs_start}" to="{cs_end}" priority="1" numLanes="2" shape="{x1p1},{y1p1} {x2p1},{y2p1}">
+        {lanes}
+    </edge>
+    <edge id="cs_lanes_{edge_id}_2" from="{cs_start}" to="{cs_end}" priority="1" numLanes="2" shape="{x1p2},{y1p2} {x2p2},{y2p2}">
+        {lanes}
+    </edge>
+    <edge id="from_cs_{edge_id}" from="{cs_end}" to="cs_{edge_id}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>     
+    """
+    charging_points = "".join(f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}_0" startPos="{lane_length/3*2}" endPos="{lane_length}" friendlyPos="true" power="{CS_POWER[0]}" chargeDelay="5" />' for i in range(3))
+    add_edge_to_xml(EDGES_FILE, edges)
+    add_cs_to_xml(ADDITIONAL_FILE, charging_points)
+
+def shifted_segment(x1, y1, x2, y2, d):
+    """
+    Returns a parallel (offset) segment shifted by distance d.
+    
+    Parameters:
+        x1, y1 : float
+            Coordinates of the start point.
+        x2, y2 : float
+            Coordinates of the end point.
+        d : float
+            Lateral offset distance (meters).
+            d > 0 shifts to the left (normal +90°),
+            d < 0 shifts to the right.
+    
+    Returns:
+        (x1_shifted, y1_shifted, x2_shifted, y2_shifted)
+    """
+
+    # Direction vector of the original segment
+    vx = x2 - x1
+    vy = y2 - y1
+
+    # Length of the segment
+    L = math.hypot(vx, vy)
+    if L == 0:
+        return x1, y1, x2, y2  # No shift for zero-length segment
+
+    # Unit normal vector (perpendicular to the segment)
+    # Rotate 90°: (vx, vy) -> (-vy, vx)
+    nx = -vy / L
+    ny =  vx / L
+
+    # Apply lateral offset to both endpoints
+    x1_shifted = x1 + d * nx
+    y1_shifted = y1 + d * ny
+    x2_shifted = x2 + d * nx
+    y2_shifted = y2 + d * ny
+
+    return (round(x1_shifted, 2), round(y1_shifted, 2), round(x2_shifted, 2), round(y2_shifted, 2))
+
+def add_charging_station_v1(edge_id, cs_group, x1, y1, x2, y2, lane_length):
+    '''
+    Adds a charging station to the network by creating the necessary nodes and edges.
+    The charging station consists of a start node, an end node, and a lane with multiple
+    charging points. The function also adds the charging station to the additional.xml file.
+    '''
+    cs_start = f"cs_start_{edge_id}_0"
+    cs_end = f"cs_end_{edge_id}_0"
+    add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+    add_node_to_xml(NODES_FILE, cs_end, x2, y2)
+    xm1, ym1, xm2, ym2 = shifted_segment(x1, y1, x2, y2, lane_length/3)
+    xm = (xm1 + xm2) / 2
+    ym = (ym1 + ym2) / 2
+    cs_split = f"cs_{edge_id}_split"
+    add_node_to_xml(NODES_FILE, cs_split, xm, ym)
+
+    edges = f"""
+    <edge id="to_cs_{edge_id}_split" from="cs_{edge_id}" to="{cs_split}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="from_cs_{edge_id}_split" from="{cs_split}" to="cs_{edge_id}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge> 
+    <edge id="to_to_cs_{edge_id}_0" from="{cs_split}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="from_from_cs_{edge_id}_0" from="{cs_end}" to="{cs_split}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge> 
+    <edge id="to_from_cs_{edge_id}_0" from="{cs_split}" to="{cs_end}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="from_to_cs_{edge_id}_0" from="{cs_start}" to="{cs_split}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>       
+    """
+    n_lanes = 3
+    lanes = "".join(f'<lane index="{i}" speed="13.89"/>' for i in range(n_lanes))  
+    cs_edges = f"""
+        <edge id="cs_lanes_{edge_id}_0" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{n_lanes}">
+            {lanes}
+        </edge>
+        <edge id="cs_back_lane_{edge_id}_0" from="{cs_end}" to="{cs_start}" priority="1">
+            <lane index="0" speed="13.89"/>
+        </edge>
+        """
+    connections = "".join(f'<connection from="cs_lanes_{edge_id}_0" to="from_from_cs_{edge_id}_0" fromLane="{i}" toLane="0"/>' for i in range(n_lanes)) 
+    connections += (f'\n<connection from="cs_back_lane_{edge_id}_0" to="from_to_cs_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="to_to_cs_{edge_id}_0" to="cs_lanes_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="to_from_cs_{edge_id}_0" to="cs_back_lane_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="from_to_cs_{edge_id}_0" to="to_from_cs_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="from_from_cs_{edge_id}_0" to="from_cs_{edge_id}_split" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="from_cs_{edge_id}_split" to="second_{edge_id}" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="to_cs_{edge_id}_split" to="to_to_cs_{edge_id}_0" fromLane="0" toLane="0"/>')
+
+    cs_length = 10
+    for i in range(1, int(CS_SIZE/cs_length)):
+        x1, y1, x2, y2 = shifted_segment(x1, y1, x2, y2, -lane_length/4)
+        cs_start = f"cs_start_{edge_id}_{i}"
+        cs_end = f"cs_end_{edge_id}_{i}"
+        add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+        add_node_to_xml(NODES_FILE, cs_end, x2, y2)
+        cs_edges += f"""
+        <edge id="cs_lanes_{edge_id}_{i}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{n_lanes}">
+            {lanes}
+        </edge>
+        <edge id="cs_back_lane_{edge_id}_{i}" from="{cs_end}" to="{cs_start}" priority="1">
+            <lane index="0" speed="13.89"/>
+        </edge>
+        """
+        edges += f"""
+        <edge id="to_to_cs_{edge_id}_{i}" from="cs_start_{edge_id}_{i-1}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+        </edge>
+        <edge id="from_from_cs_{edge_id}_{i}" from="{cs_end}" to="cs_end_{edge_id}_{i-1}" priority="-1">
+            <lane index="0" speed="13.89"/>
+        </edge>
+        <edge id="from_to_cs_{edge_id}_{i}" from="{cs_start}" to="cs_start_{edge_id}_{i-1}" priority="-1">
+        <lane index="0" speed="13.89"/>
+        </edge>
+        <edge id="to_from_cs_{edge_id}_{i}" from="cs_end_{edge_id}_{i-1}" to="{cs_end}" priority="-1">
+            <lane index="0" speed="13.89"/>
+        </edge>      
+        """
+        for j in range(n_lanes):
+            connections += (f'\n<connection from="cs_lanes_{edge_id}_{i}" to="from_from_cs_{edge_id}_{i}" fromLane="{j}" toLane="0"/>')
+            connections += (f'\n<connection from="cs_lanes_{edge_id}_{i-1}" to="to_from_cs_{edge_id}_{i}" fromLane="{j}" toLane="0"/>')
+        connections += (f'\n<connection from="cs_back_lane_{edge_id}_{i}" to="from_to_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="cs_back_lane_{edge_id}_{i-1}" to="to_to_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="to_to_cs_{edge_id}_{i}" to="cs_lanes_{edge_id}_{i}" fromLane="0" toLane="1"/>')
+        connections += (f'\n<connection from="to_to_cs_{edge_id}_{i-1}" to="to_to_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="from_to_cs_{edge_id}_{i}" to="cs_lanes_{edge_id}_{i-1}" fromLane="0" toLane="1"/>')
+        connections += (f'\n<connection from="from_to_cs_{edge_id}_{i}" to="from_to_cs_{edge_id}_{i-1}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="from_from_cs_{edge_id}_{i}" to="cs_back_lane_{edge_id}_{i-1}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="from_from_cs_{edge_id}_{i}" to="from_from_cs_{edge_id}_{i-1}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="to_from_cs_{edge_id}_{i-1}" to="to_from_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="to_from_cs_{edge_id}_{i}" to="cs_back_lane_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+
+
+    cs_offset = cs_length * 5 + (cs_length - 1) * 1.5
+    edges += cs_edges
+    charging_points = "".join(f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}_1" startPos="{lane_length-30-cs_offset}" endPos="{lane_length-30}" friendlyPos="true" power="{CS_POWER[0]}" chargeDelay="5" />' for i in range(int(CS_SIZE/cs_length)))
+    add_edge_to_xml(EDGES_FILE, edges)
+    add_cs_to_xml(ADDITIONAL_FILE, charging_points)
+    add_connection_to_xml(CON_FILE, connections)
+
+def add_charging_station_v2(edge_id, cs_group, x1, y1, x2, y2, lane_length):
+    '''
+    Adds a charging station to the network by creating the necessary nodes and edges.
+    The charging station consists of a start node, an end node, and a lane with multiple
+    charging points. The function also adds the charging station to the additional.xml file.
+    '''
+    cs_start = f"cs_start_{edge_id}_0"
+    cs_end = f"cs_end_{edge_id}_0"
+    add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+    add_node_to_xml(NODES_FILE, cs_end, x2, y2)
+    xm1, ym1, xm2, ym2 = shifted_segment(x1, y1, x2, y2, lane_length/3)
+    xm = (xm1 + xm2) / 2
+    ym = (ym1 + ym2) / 2
+    cs_split = f"cs_{edge_id}_split"
+    add_node_to_xml(NODES_FILE, cs_split, xm, ym)
+
+    edges = f"""
+    <edge id="to_cs_{edge_id}_split" from="cs_{edge_id}" to="{cs_split}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="from_cs_{edge_id}_split" from="{cs_split}" to="cs_{edge_id}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge> 
+    <edge id="to_to_cs_{edge_id}_0" from="{cs_split}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="from_from_cs_{edge_id}_0" from="{cs_end}" to="{cs_split}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge> 
+    <edge id="to_from_cs_{edge_id}_0" from="{cs_split}" to="{cs_end}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="from_to_cs_{edge_id}_0" from="{cs_start}" to="{cs_split}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>       
+    """
+    n_lanes = 3
+    lanes = "".join(f'<lane index="{i}" speed="13.89"/>' for i in range(n_lanes))  
+    cs_edges = f"""
+        <edge id="cs_lanes_{edge_id}_0" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{n_lanes}">
+            {lanes}
+        </edge>
+        <edge id="cs_back_lane_{edge_id}_0" from="{cs_end}" to="{cs_start}" priority="1">
+            <lane index="0" speed="13.89"/>
+        </edge>
+        """
+    connections = "".join(f'<connection from="cs_lanes_{edge_id}_0" to="from_from_cs_{edge_id}_0" fromLane="{i}" toLane="0"/>' for i in range(n_lanes)) 
+    connections += (f'\n<connection from="cs_back_lane_{edge_id}_0" to="from_to_cs_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="to_to_cs_{edge_id}_0" to="cs_lanes_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="to_from_cs_{edge_id}_0" to="cs_back_lane_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="from_to_cs_{edge_id}_0" to="to_from_cs_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="from_from_cs_{edge_id}_0" to="from_cs_{edge_id}_split" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="from_cs_{edge_id}_split" to="second_{edge_id}" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="to_cs_{edge_id}_split" to="to_to_cs_{edge_id}_0" fromLane="0" toLane="0"/>')
+
+    cs_length = 10
+    for i in range(1, int(CS_SIZE/cs_length)):
+        x1, y1, x2, y2 = shifted_segment(x1, y1, x2, y2, -lane_length/4)
+        cs_start = f"cs_start_{edge_id}_{i}"
+        cs_end = f"cs_end_{edge_id}_{i}"
+        add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+        add_node_to_xml(NODES_FILE, cs_end, x2, y2)
+        cs_edges += f"""
+        <edge id="cs_lanes_{edge_id}_{i}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{n_lanes}">
+            {lanes}
+        </edge>
+        <edge id="cs_back_lane_{edge_id}_{i}" from="{cs_end}" to="{cs_start}" priority="1">
+            <lane index="0" speed="13.89"/>
+        </edge>
+        """
+        edges += f"""
+        <edge id="to_to_cs_{edge_id}_{i}" from="cs_start_{edge_id}_{i-1}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+        </edge>
+        <edge id="from_from_cs_{edge_id}_{i}" from="{cs_end}" to="cs_end_{edge_id}_{i-1}" priority="-1">
+            <lane index="0" speed="13.89"/>
+        </edge>
+        <edge id="from_to_cs_{edge_id}_{i}" from="{cs_start}" to="cs_start_{edge_id}_{i-1}" priority="-1">
+        <lane index="0" speed="13.89"/>
+        </edge>
+        <edge id="to_from_cs_{edge_id}_{i}" from="cs_end_{edge_id}_{i-1}" to="{cs_end}" priority="-1">
+            <lane index="0" speed="13.89"/>
+        </edge>      
+        """
+        for j in range(n_lanes):
+            connections += (f'\n<connection from="cs_lanes_{edge_id}_{i}" to="from_from_cs_{edge_id}_{i}" fromLane="{j}" toLane="0"/>')
+            connections += (f'\n<connection from="cs_lanes_{edge_id}_{i-1}" to="to_from_cs_{edge_id}_{i}" fromLane="{j}" toLane="0"/>')
+        connections += (f'\n<connection from="cs_back_lane_{edge_id}_{i}" to="from_to_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="cs_back_lane_{edge_id}_{i-1}" to="to_to_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="to_to_cs_{edge_id}_{i}" to="cs_lanes_{edge_id}_{i}" fromLane="0" toLane="1"/>')
+        connections += (f'\n<connection from="to_to_cs_{edge_id}_{i-1}" to="to_to_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="from_to_cs_{edge_id}_{i}" to="cs_lanes_{edge_id}_{i-1}" fromLane="0" toLane="1"/>')
+        connections += (f'\n<connection from="from_to_cs_{edge_id}_{i}" to="from_to_cs_{edge_id}_{i-1}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="from_from_cs_{edge_id}_{i}" to="cs_back_lane_{edge_id}_{i-1}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="from_from_cs_{edge_id}_{i}" to="from_from_cs_{edge_id}_{i-1}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="to_from_cs_{edge_id}_{i-1}" to="to_from_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="to_from_cs_{edge_id}_{i}" to="cs_back_lane_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+
+
+
+    cs_offset = cs_length * 5 + (cs_length - 1) * 1.5
+    edges += cs_edges
+    #charging_points = "".join(f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}_1" startPos="{lane_length-30-cs_offset}" endPos="{lane_length-30}" friendlyPos="true" power="{CS_POWER[0]}" chargeDelay="5" />' for i in range(int(CS_SIZE/cs_length)))
+    charging_points = ""
+    for i in range(int(CS_SIZE/cs_length)):
+        for j in range(cs_length):
+            cs_offset = j * 15
+            charging_points += f'\n<parkingArea id="parking_{edge_id}_{i}_{j}" lane="cs_lanes_{edge_id}_{i}_0" startPos="{lane_length-35-cs_offset}" endPos="{lane_length-30-cs_offset}" friendlyPos="true"/>'
+            charging_points += f'\n<chargingStation id="cs_{edge_id}_{i}_{j}" parkingArea="parking_{edge_id}_{i}_{j}" lane="cs_lanes_{edge_id}_{i}_0" startPos="{lane_length-35-cs_offset}" endPos="{lane_length-30-cs_offset}" friendlyPos="true" power="{CS_POWER[0]}" chargeDelay="5" />'
+    add_edge_to_xml(EDGES_FILE, edges)
+    add_cs_to_xml(ADDITIONAL_FILE, charging_points)
+    add_connection_to_xml(CON_FILE, connections)
+
+def add_charging_station(edge_id, cs_group, x1, y1, x2, y2, lane_length):
+    '''
+    Adds a charging station to the network by creating the necessary nodes and edges.
+    The charging station consists of a start node, an end node, and a lane with multiple
+    charging points. The function also adds the charging station to the additional.xml file.
+    '''
+    cs_start = f"cs_start_{edge_id}_0"
+    cs_end = f"cs_end_{edge_id}_0"
+    add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+    add_node_to_xml(NODES_FILE, cs_end, x2, y2)
+    xm1, ym1, xm2, ym2 = shifted_segment(x1, y1, x2, y2, lane_length/3)
+    xm = (xm1 + xm2) / 2
+    ym = (ym1 + ym2) / 2
+    cs_split = f"cs_{edge_id}_split"
+    add_node_to_xml(NODES_FILE, cs_split, xm, ym)
+
+    edges = f"""
+    <edge id="to_cs_{edge_id}_split" from="cs_{edge_id}" to="{cs_split}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="from_cs_{edge_id}_split" from="{cs_split}" to="cs_{edge_id}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge> 
+    <edge id="to_to_cs_{edge_id}_0" from="{cs_split}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="from_from_cs_{edge_id}_0" from="{cs_end}" to="{cs_split}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge> 
+    <edge id="to_from_cs_{edge_id}_0" from="{cs_split}" to="{cs_end}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>
+    <edge id="from_to_cs_{edge_id}_0" from="{cs_start}" to="{cs_split}" priority="-1">
+        <lane index="0" speed="13.89"/>
+    </edge>       
+    """
+    n_lanes = 3
+    lanes = "".join(f'<lane index="{i}" speed="13.89"/>' for i in range(n_lanes))  
+    cs_edges = f"""
+        <edge id="cs_lanes_{edge_id}_0" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{n_lanes}">
+            {lanes}
+        </edge>
+        <edge id="cs_back_lane_{edge_id}_0" from="{cs_end}" to="{cs_start}" priority="1">
+            <lane index="0" speed="13.89"/>
+        </edge>
+        """
+    connections = "".join(f'<connection from="cs_lanes_{edge_id}_0" to="from_from_cs_{edge_id}_0" fromLane="{i}" toLane="0"/>' for i in range(n_lanes)) 
+    connections += (f'\n<connection from="cs_back_lane_{edge_id}_0" to="from_to_cs_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="to_to_cs_{edge_id}_0" to="cs_lanes_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="to_from_cs_{edge_id}_0" to="cs_back_lane_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="from_to_cs_{edge_id}_0" to="to_from_cs_{edge_id}_0" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="from_from_cs_{edge_id}_0" to="from_cs_{edge_id}_split" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="from_cs_{edge_id}_split" to="second_{edge_id}" fromLane="0" toLane="0"/>')
+    connections += (f'\n<connection from="to_cs_{edge_id}_split" to="to_to_cs_{edge_id}_0" fromLane="0" toLane="0"/>')
+
+    cs_length = 10
+    for i in range(1, int(CS_SIZE/cs_length)):
+        x1, y1, x2, y2 = shifted_segment(x1, y1, x2, y2, -lane_length/4)
+        cs_start = f"cs_start_{edge_id}_{i}"
+        cs_end = f"cs_end_{edge_id}_{i}"
+        add_node_to_xml(NODES_FILE, cs_start, x1, y1)
+        add_node_to_xml(NODES_FILE, cs_end, x2, y2)
+        cs_edges += f"""
+        <edge id="cs_lanes_{edge_id}_{i}" from="{cs_start}" to="{cs_end}" priority="1" numLanes="{n_lanes}">
+            {lanes}
+        </edge>
+        <edge id="cs_back_lane_{edge_id}_{i}" from="{cs_end}" to="{cs_start}" priority="1">
+            <lane index="0" speed="13.89"/>
+        </edge>
+        """
+        edges += f"""
+        <edge id="to_to_cs_{edge_id}_{i}" from="cs_start_{edge_id}_{i-1}" to="{cs_start}" priority="-1">
+        <lane index="0" speed="13.89"/>
+        </edge>
+        <edge id="from_from_cs_{edge_id}_{i}" from="{cs_end}" to="cs_end_{edge_id}_{i-1}" priority="-1">
+            <lane index="0" speed="13.89"/>
+        </edge>
+        <edge id="from_to_cs_{edge_id}_{i}" from="{cs_start}" to="cs_start_{edge_id}_{i-1}" priority="-1">
+        <lane index="0" speed="13.89"/>
+        </edge>
+        <edge id="to_from_cs_{edge_id}_{i}" from="cs_end_{edge_id}_{i-1}" to="{cs_end}" priority="-1">
+            <lane index="0" speed="13.89"/>
+        </edge>      
+        """
+        for j in range(n_lanes):
+            connections += (f'\n<connection from="cs_lanes_{edge_id}_{i}" to="from_from_cs_{edge_id}_{i}" fromLane="{j}" toLane="0"/>')
+            connections += (f'\n<connection from="cs_lanes_{edge_id}_{i-1}" to="to_from_cs_{edge_id}_{i}" fromLane="{j}" toLane="0"/>')
+        connections += (f'\n<connection from="cs_back_lane_{edge_id}_{i}" to="from_to_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="cs_back_lane_{edge_id}_{i-1}" to="to_to_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="to_to_cs_{edge_id}_{i}" to="cs_lanes_{edge_id}_{i}" fromLane="0" toLane="1"/>')
+        connections += (f'\n<connection from="to_to_cs_{edge_id}_{i-1}" to="to_to_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="from_to_cs_{edge_id}_{i}" to="cs_lanes_{edge_id}_{i-1}" fromLane="0" toLane="1"/>')
+        connections += (f'\n<connection from="from_to_cs_{edge_id}_{i}" to="from_to_cs_{edge_id}_{i-1}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="from_from_cs_{edge_id}_{i}" to="cs_back_lane_{edge_id}_{i-1}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="from_from_cs_{edge_id}_{i}" to="from_from_cs_{edge_id}_{i-1}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="to_from_cs_{edge_id}_{i-1}" to="to_from_cs_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+        connections += (f'\n<connection from="to_from_cs_{edge_id}_{i}" to="cs_back_lane_{edge_id}_{i}" fromLane="0" toLane="0"/>')
+
+
+
+    cs_offset = cs_length * 5 + (cs_length - 1) * 2
+    edges += cs_edges
+    #charging_points = "".join(f'\n<chargingStation id="cs_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}_1" startPos="{lane_length-30-cs_offset}" endPos="{lane_length-30}" friendlyPos="true" power="{CS_POWER[0]}" chargeDelay="5" />' for i in range(int(CS_SIZE/cs_length)))
+    charging_points = ""
+    for i in range(int(CS_SIZE/cs_length)):
+        charging_points += f'\n<parkingArea id="parking_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}_0" startPos="{lane_length-30-cs_offset}" endPos="{lane_length-30}" friendlyPos="true" roadsideCapacity="{cs_length}"/>'
+        charging_points += f'\n<chargingStation id="cs_{edge_id}_{i}" parkingArea="parking_{edge_id}_{i}" lane="cs_lanes_{edge_id}_{i}_0" startPos="{lane_length-30-cs_offset}" endPos="{lane_length-30}" friendlyPos="true" power="{CS_POWER[0]}" chargeDelay="5" />'
+    add_edge_to_xml(EDGES_FILE, edges)
+    add_cs_to_xml(ADDITIONAL_FILE, charging_points)
+    add_connection_to_xml(CON_FILE, connections)
+
 def add_node_to_xml(file_path, node_id, x, y):
     """
     Appends a <node> element to the XML file before the closing </nodes> tag.
@@ -465,6 +952,25 @@ def add_edge_to_xml(file_path, edge_block):
             f.write(line)
 
     print(f'Edge block added to {file_path}.')
+
+def add_connection_to_xml(file_path, connection_block):
+    """
+    Appends an <connection> block to the XML file before the closing </connections> tag.
+
+    Parameters:
+        file_path (str): Path to the connection.xml file.
+        connection_block (str): XML text of the connection block (can be multiline).
+    """
+    with open(file_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        for line in lines:
+            if line.strip() == "</connections>":
+                f.write(connection_block.rstrip() + "\n")
+            f.write(line)
+
+    print(f'Connection block added to {file_path}.')
 
 def add_cs_to_xml(file_path, cs_block):
     """
@@ -638,16 +1144,16 @@ def run_simulation(port):
                     csId_battery = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")  # 'b'
                     reroutings.tick_update_vehicle(reroutingData,veh,csId_stationfinder,csId_battery,sim_time)
                     # If the EV is looking for a station, teleporting is disabled
-                    if csId_stationfinder != "":
-                        wt=traci.vehicle.getWaitingTime(veh)
-                        if wt == 49:
-                            print(f"Vehicle {veh} has waiting time {wt} at time {sim_time}")
-                            x,y = traci.vehicle.getPosition(veh)
-                            angle = traci.vehicle.getAngle(veh)
-                            xb, yb = step_back(x,y,angle)
-                            # Move the vehicle slightly to reset waiting time
-                            print(f"Moving vehicle {veh} slightly to reset waiting time with angle {angle}")
-                            traci.vehicle.moveToXY(veh, "", 0, xb, yb, angle=angle, keepRoute=1)
+                    # if csId_stationfinder != "":
+                    #     wt=traci.vehicle.getWaitingTime(veh)
+                    #     if wt == 49:
+                    #         #print(f"Vehicle {veh} has waiting time {wt} at time {sim_time}")
+                    #         x,y = traci.vehicle.getPosition(veh)
+                    #         angle = traci.vehicle.getAngle(veh)
+                    #         xb, yb = step_back(x,y,angle)
+                    #         # Move the vehicle slightly to reset waiting time
+                    #         #print(f"Moving vehicle {veh} slightly to reset waiting time with angle {angle}")
+                    #         traci.vehicle.moveToXY(veh, "", 0, xb, yb, angle=angle, keepRoute=1)
 
         # Vehicles which are starting to charge        
         for veh in traci.simulation.getStopStartingVehiclesIDList():
@@ -655,24 +1161,24 @@ def run_simulation(port):
             if vtype == "EV":
                 csId = traci.vehicle.getParameter(veh, "device.battery.chargingStationId")
                 reroutings.handle_arrival(reroutingData,veh,csId,sim_time)            
-                vehList.append(veh)
-                traci.chargingstation.setParameter(csId, "desiredPower", 0)
-                traci.chargingstation.setParameter(csId, "aliquotPowerAdjustment", 1)
+                #vehList.append(veh)
+                #traci.chargingstation.setParameter(csId, "desiredPower", 0)
+                #traci.chargingstation.setParameter(csId, "aliquotPowerAdjustment", 1)
 
         # Vehicles which are ending to charge
-        for veh in traci.simulation.getStopEndingVehiclesIDList():
-            vtype = traci.vehicle.getTypeID(veh)
-            if vtype == "EV":
-                vehList.remove(veh)
+        #for veh in traci.simulation.getStopEndingVehiclesIDList():
+           # vtype = traci.vehicle.getTypeID(veh)
+            #if vtype == "EV":
+             #   vehList.remove(veh)
 
         # Set power adjustments
-        calculateAliquotPowerAdjustments(vehList)
-        setChargingStationPowers(vehList)
+        #calculateAliquotPowerAdjustments(vehList)
+        #setChargingStationPowers(vehList)
         # Get vehicle emissions at this step
-        vehicleEmissions[int(traci.simulation.getTime())] = emissions.get_instant_vehicle_emissions(simulationData)
+        # vehicleEmissions[int(traci.simulation.getTime())] = emissions.get_instant_vehicle_emissions(simulationData)
 
     # Get the final simulation information
-    emissions.get_final_simulation_information(simulationData, vehicleEmissions)
+    # emissions.get_final_simulation_information(simulationData, vehicleEmissions)
     reroutingResult = reroutings.finalize_json(reroutingData)
     reroutings.dump_json(reroutingResult, WORKING_FOLDER + "rerouting_metrics.json")
 
@@ -680,7 +1186,7 @@ def run_simulation(port):
     traci.close()
 
     # Extract metrics and save output data
-    emissions.save_output_data(simulationData, vehicleEmissions, WORKING_FOLDER)
+    # emissions.save_output_data(simulationData, vehicleEmissions, WORKING_FOLDER)
     charging_metrics.extract_charging_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "charging_metrics.json", CS_SIZE)
     traffic_metrics.extract_traffic_metrics_from_sumocfg(CONFIG_FILE, WORKING_FOLDER + "traffic_metrics.json")
 
@@ -692,8 +1198,8 @@ def step_back(x: float, y: float, angle_deg: float):
     Angles increase clockwise.
     """
     a = math.radians(angle_deg % 360)
-    nx = x - math.sin(a)
-    ny = y - math.cos(a)
+    nx = x - math.sin(a)*0.1
+    ny = y - math.cos(a)*0.1
     return nx, ny
 
 def remove_files(WORKING_FOLDER, files_to_remove):
@@ -827,14 +1333,14 @@ def run(config, port=8816):
     CS_LIST = config["CS_LIST"]
     CS_SIZE = config["CS_SIZE"]
     CS_POWER = config["CS_POWER"]
+    CON_FILE = WORKING_FOLDER + config["CON_FILE"]
     add_charging_stations()
 
     # Replace routes file
     ROUTES_FILE = WORKING_FOLDER + config["ROUTES_FILE"]
     replace_routes()
 
-    # Fix connections file
-    CON_FILE = WORKING_FOLDER + config["CON_FILE"]
+    # Fix connections file    
     fix_connections(CON_FILE)
     TLL_FILE = WORKING_FOLDER + config["TLL_FILE"]
     fix_connections(TLL_FILE)

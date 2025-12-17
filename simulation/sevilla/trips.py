@@ -244,7 +244,11 @@ def create_route_file(vehicles:List[Vehicle], filename="generated_routes.rou.xml
          'routeChoice': 'true',
          'reroute': 'true',
          'rerouteProbability':'1.0',
-         'rerouteInterval': '5.0'         
+         'rerouteInterval': '5.0',
+         'has.rerouting.device': 'true',
+         'device.rerouting.probability': '1.0',
+         'device.rerouting.mode': '8',
+         'device.rerouting.period': '120'     
          }
     SubElement(root, 'vType', vtype_regular)
 
@@ -262,13 +266,15 @@ def create_route_file(vehicles:List[Vehicle], filename="generated_routes.rou.xml
     params = [
         ('has.battery.device', 'true'),
         ('device.battery.capacity', '64000'),
-        ('device.battery.stoppingTreshold', '0.1'),
-        ('allowedPowerIntake', '120000'),
+        ('device.battery.chargeLevel', '26000'),
+        ('device.battery.stoppingThreshold', '0.1'),
+        ('allowedPowerIntake', '150000'),
         ('maximumPower', '100000'),
         ('has.stationfinder.device', 'true'),
         ('device.stationfinder.checkEnergyForRoute', 'false'),
-        ('device.stationfinder.replacePlannedStop', '0'),
-        ('device.stationfinder.waitForCharge', '100'),
+        ('device.stationfinder.replacePlannedStop', '1'),
+        ('device.stationfinder.waitForCharge', '10'),
+        ('device.stationfinder.needToChargeLevel', '0.4'),
         ('device.stationfinder.repeat', '10'),
         ('device.stationfinder.charging.waitingTime.weight', '5'),
         ('device.stationfinder.radius', '300000'),
@@ -360,6 +366,7 @@ if __name__ == "__main__":
         #hour_route_data:dict = load_route_data('parseEdges/datos_combinados_1.csv', 'lc/rutas_edges_v1.json') 
 
         hours = list(hour_route_data.keys())
+        hours = hours[6:23] # Limit to hours 6 to 22 - 61200 seconds
         hours_per_process = len(hours) // size  # Distribute hours evenly among processes
         remainder = len(hours) % size
         

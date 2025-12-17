@@ -1,0 +1,2 @@
+python3 scale_routes.py datos_combinados_1.csv datos_combinados_005.csv 0.05
+python3 trips.py --net-file osm.net.xml --vehicles-file datos_combinados_005.csv --output-file routes005.rou.xml --edges-file rutas_edges_v1.json --electric-percentage 0.3

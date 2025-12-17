@@ -1,6 +1,3 @@
-# reroutings.py
-# All comments in English.
-
 import math
 import json
 
